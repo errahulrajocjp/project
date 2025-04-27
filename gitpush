@@ -1,0 +1,46 @@
+@Autowired
+private DagService dagService;  // Add this dependency
+
+public String pushFilesToGitLab(ProjectComposerDetailsDTO dto) throws CommonNotFoundException, IOException, GitAPIException, SQLException {
+    String jsonContent = "";
+    File tempDir = new File(tempDirPath);
+    deleteDirectory(tempDir);// Empty temp directory at the start of each method call
+    
+    // First, generate the DPF JSON using the View JSON logic
+    try {
+        JsonNode dpfJson = dagService.generateDpfJson(dto.getDagId());
+        String dpfJsonString = dpfJson.toString();
+        
+        // Save the generated DPF JSON to finalJson field
+        dagService.saveFinalJson(dto.getDagId(), dpfJsonString);
+        
+        // Use this generated JSON as the content to push
+        jsonContent = dpfJsonString;
+        
+    } catch (Exception e) {
+        logger.error("Error generating or saving DPF JSON: {}", e.getMessage());
+        throw new RuntimeException("Failed to generate DPF JSON for DAG: " + dto.getDagId(), e);
+    }
+    
+    // Fetch Git URL using ProjectComposerUrlsRepository
+    List<Object[]> gitLabRepoUrlObjectArray = projectComposerUrlsRepository.findGitUrlByDto(dto.getProjectId(), dto.getComposerInstanceName(), dto.getSubLob());
+    // ... rest of the existing code remains the same ...
+    
+    // NO NEED to fetch finalJson from dagParameter anymore since we already have it
+    // Just fetch the tasks
+    List<Object[]> dagParameter = dagParameterRepository.findPushContentsByDagId(dto.getDagId());
+    if (dagParameter == null || dagParameter.isEmpty()) {
+        throw new IllegalArgumentException("No data found for dagId: " + dto.getDagId());
+    }
+    
+    String tasks = "";
+    for(Object[] data : dagParameter) {
+        // Skip data[0] which is finalJson since we already have it
+        tasks = convertClobOrBlobToString(data[2]);
+        if (tasks == null || tasks.isEmpty()) {
+            throw new IllegalArgumentException("Tasks content is null or empty for dagId: " + dto.getDagId());
+        }
+    }
+    
+    // ... rest of the existing code remains the same ...
+}
