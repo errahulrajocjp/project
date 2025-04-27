@@ -1,0 +1,9 @@
+@Override
+public void saveFinalJson(String dagId, String finalJson) {
+    DagParameter dagParameter = dagParameterRepository.findById(dagId)
+            .orElseThrow(() -> new ResourceNotFoundException("DAG not found with ID: " + dagId));
+    
+    dagParameter.setFinalJson(finalJson);
+    dagParameterRepository.save(dagParameter);
+    logger.info("Successfully saved final JSON for DAG: " + dagId);
+}
