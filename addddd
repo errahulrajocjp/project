@@ -1,0 +1,91 @@
+@Override
+public JsonNode generateDpfJson(String dagId) {
+    // Fetch the DAG with tasks
+    DagParameter dagParameter = dagParameterRepository.findById(dagId)
+            .orElseThrow(() -> new ResourceNotFoundException("DAG not found with ID: " + dagId));
+    
+    ObjectMapper mapper = new ObjectMapper();
+    ObjectNode rootNode = mapper.createObjectNode();
+    
+    // Add top-level DAG properties
+    rootNode.put("Name", dagParameter.getDagName());
+    
+    // 1. Always set Type as "ingestioncuration" instead of null
+    rootNode.put("Type", "ingestioncuration");
+    
+    // Only add these fields if Schedule Type is not "None"
+    if (dagParameter.getScheduleType() == null || !"None".equalsIgnoreCase(dagParameter.getScheduleType())) {
+        // 2. Format Start_Date as "datetime(year,month,day)"
+        if (dagParameter.getStartDate() != null) {
+            LocalDate startDate = dagParameter.getStartDate();
+            rootNode.put("Start_Date", "datetime(" + startDate.getYear() + "," + 
+                         startDate.getMonthValue() + "," + startDate.getDayOfMonth() + ")");
+        } else {
+            // Fallback to current date when start date is null
+            LocalDate now = LocalDate.now();
+            rootNode.put("Start_Date", "datetime(" + now.getYear() + "," + 
+                         now.getMonthValue() + "," + now.getDayOfMonth() + ")");
+        }
+        
+        // 4. Capitalize catchup value
+        if (dagParameter.getCatchup() != null) {
+            String catchupValue = dagParameter.getCatchup().toLowerCase();
+            if ("true".equals(catchupValue)) {
+                rootNode.put("catchup", "True");
+            } else {
+                rootNode.put("catchup", "False");
+            }
+        } else {
+            rootNode.put("catchup", "False"); // Default value
+        }
+        
+        // Add timezone if not null
+        if (dagParameter.getTimezone() != null) {
+            rootNode.put("Timezone", dagParameter.getTimezone());
+        } else {
+            rootNode.put("Timezone", "EST"); // Default value
+        }
+    }
+    
+    // 3. Handle Schedule_interval formatting
+    if (dagParameter.getScheduleInterval() != null) {
+        String scheduleInterval = dagParameter.getScheduleInterval();
+        
+        // Convert Daily/Weekly/Monthly to @daily/@weekly/@monthly
+        if ("Daily".equalsIgnoreCase(scheduleInterval)) {
+            rootNode.put("Schedule_interval", "@daily");
+        } else if ("Weekly".equalsIgnoreCase(scheduleInterval)) {
+            rootNode.put("Schedule_interval", "@weekly");
+        } else if ("Monthly".equalsIgnoreCase(scheduleInterval)) {
+            rootNode.put("Schedule_interval", "@monthly");
+        } else {
+            // Use the original value if it's not one of the special cases
+            rootNode.put("Schedule_interval", scheduleInterval);
+        }
+    } else {
+        rootNode.put("Schedule_interval", "None");
+    }
+    
+    rootNode.put("max_active_runs", "1"); // Default value
+    rootNode.put("Project_space", dagParameter.getProject().getProjectName());
+    
+    // Add run_config if needed
+    if (dagParameter.getScheduleType() != null && 
+        "Cron Scheduler".equalsIgnoreCase(dagParameter.getScheduleType()) && 
+        dagParameter.getScheduleInterval() != null && 
+        dagParameter.getScheduleInterval().contains("weekDays")) {
+        
+        ObjectNode runConfig = mapper.createObjectNode();
+        ArrayNode weekDays = mapper.createArrayNode();
+        // Extract weekdays from scheduleInterval or parameters
+        weekDays.add("Monday").add("Thursday").add("Friday").add("Tuesday"); // Example
+        runConfig.set("weekDays", weekDays);
+        rootNode.set("run_config", runConfig);
+    }
+    
+    // Generate Steps array
+    ArrayNode stepsArray = generateStepsArray(dagParameter.getTasks(), mapper);
+    rootNode.set("Steps", stepsArray);
+    
+    return rootNode;
+}
