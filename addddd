@@ -1,91 +1,72 @@
-@Override
-public JsonNode generateDpfJson(String dagId) {
-    // Fetch the DAG with tasks
-    DagParameter dagParameter = dagParameterRepository.findById(dagId)
-            .orElseThrow(() -> new ResourceNotFoundException("DAG not found with ID: " + dagId));
-    
-    ObjectMapper mapper = new ObjectMapper();
-    ObjectNode rootNode = mapper.createObjectNode();
-    
-    // Add top-level DAG properties
-    rootNode.put("Name", dagParameter.getDagName());
-    
-    // 1. Always set Type as "ingestioncuration" instead of null
-    rootNode.put("Type", "ingestioncuration");
-    
-    // Only add these fields if Schedule Type is not "None"
-    if (dagParameter.getScheduleType() == null || !"None".equalsIgnoreCase(dagParameter.getScheduleType())) {
-        // 2. Format Start_Date as "datetime(year,month,day)"
-        if (dagParameter.getStartDate() != null) {
-            LocalDate startDate = dagParameter.getStartDate();
-            rootNode.put("Start_Date", "datetime(" + startDate.getYear() + "," + 
-                         startDate.getMonthValue() + "," + startDate.getDayOfMonth() + ")");
-        } else {
-            // Fallback to current date when start date is null
-            LocalDate now = LocalDate.now();
-            rootNode.put("Start_Date", "datetime(" + now.getYear() + "," + 
-                         now.getMonthValue() + "," + now.getDayOfMonth() + ")");
-        }
-        
-        // 4. Capitalize catchup value
-        if (dagParameter.getCatchup() != null) {
-            String catchupValue = dagParameter.getCatchup().toLowerCase();
-            if ("true".equals(catchupValue)) {
-                rootNode.put("catchup", "True");
-            } else {
-                rootNode.put("catchup", "False");
-            }
-        } else {
-            rootNode.put("catchup", "False"); // Default value
-        }
-        
-        // Add timezone if not null
-        if (dagParameter.getTimezone() != null) {
-            rootNode.put("Timezone", dagParameter.getTimezone());
-        } else {
-            rootNode.put("Timezone", "EST"); // Default value
-        }
-    }
-    
-    // 3. Handle Schedule_interval formatting
-    if (dagParameter.getScheduleInterval() != null) {
-        String scheduleInterval = dagParameter.getScheduleInterval();
-        
-        // Convert Daily/Weekly/Monthly to @daily/@weekly/@monthly
-        if ("Daily".equalsIgnoreCase(scheduleInterval)) {
-            rootNode.put("Schedule_interval", "@daily");
-        } else if ("Weekly".equalsIgnoreCase(scheduleInterval)) {
-            rootNode.put("Schedule_interval", "@weekly");
-        } else if ("Monthly".equalsIgnoreCase(scheduleInterval)) {
-            rootNode.put("Schedule_interval", "@monthly");
-        } else {
-            // Use the original value if it's not one of the special cases
-            rootNode.put("Schedule_interval", scheduleInterval);
-        }
-    } else {
-        rootNode.put("Schedule_interval", "None");
-    }
-    
-    rootNode.put("max_active_runs", "1"); // Default value
-    rootNode.put("Project_space", dagParameter.getProject().getProjectName());
-    
-    // Add run_config if needed
-    if (dagParameter.getScheduleType() != null && 
-        "Cron Scheduler".equalsIgnoreCase(dagParameter.getScheduleType()) && 
-        dagParameter.getScheduleInterval() != null && 
-        dagParameter.getScheduleInterval().contains("weekDays")) {
-        
-        ObjectNode runConfig = mapper.createObjectNode();
-        ArrayNode weekDays = mapper.createArrayNode();
-        // Extract weekdays from scheduleInterval or parameters
-        weekDays.add("Monday").add("Thursday").add("Friday").add("Tuesday"); // Example
-        runConfig.set("weekDays", weekDays);
-        rootNode.set("run_config", runConfig);
-    }
-    
-    // Generate Steps array
-    ArrayNode stepsArray = generateStepsArray(dagParameter.getTasks(), mapper);
-    rootNode.set("Steps", stepsArray);
-    
-    return rootNode;
+Here are the highlighted code changes to implement the path functionality:
+
+### 1. DagController.java - Added path parameter
+
+```java
+@PostMapping(value = "/{dagId}/tasks", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+public ResponseEntity<ApiResponse<DagParameterTaskDto>> addOrUpdateTask(
+        @PathVariable String dagId,
+        @RequestParam(value = "userDagTaskId", required = false) String userDagTaskId,
+        @RequestParam(value = "taskId") String taskId,
+        @RequestParam(value = "taskName") String taskName,
+        @RequestParam(value = "customTaskId") String customTaskId,
+        @RequestParam(value = "path", required = false) String path,  // HIGHLIGHTED: New parameter
+        @RequestParam(value = "parameters", required = false) String parametersJson,
+        // ... other parameters ...
+```
+
+### 2. DagController.java - Added code to store path
+
+```java
+// HIGHLIGHTED: Add path to parameters if provided and task is SQL-related
+if (path != null && !path.trim().isEmpty() && 
+    (taskId.equals("BqTransform") || taskId.equals("BqSqlSensor"))) {
+    parameters.put("sqlPath", path.trim());
+    logger.debug("Added sqlPath to parameters: " + path);
 }
+```
+
+### 3. organizeParametersByLevel method - Skip sqlPath
+
+```java
+// Process each parameter
+for (Map.Entry<String, String> param : task.getParameters().entrySet()) {
+    String paramName = param.getKey();
+    String paramValue = param.getValue();
+    
+    // Skip special parameters
+    if ("okTo".equals(paramName) || "sqlPath".equals(paramName) || paramName.startsWith("obs")) {
+        continue;  // HIGHLIGHTED: Added sqlPath to skipped parameters
+    }
+    
+    // ... rest of the code ...
+}
+```
+
+### 4. generateTaskNode method - Handle combining path with filename
+
+```java
+// HIGHLIGHTED: Handle sqlPath for SQL tasks
+if ((task.getTaskId().equals("BqTransform") || task.getTaskId().equals("BqSqlSensor")) && 
+    task.hasSqlFile()) {
+    
+    String sqlFile = task.getSqlFileName();
+    String sqlPath = task.getParameters().get("sqlPath");
+    
+    if (sqlPath != null && !sqlPath.trim().isEmpty()) {
+        // Ensure path ends with a slash if needed
+        if (!sqlPath.endsWith("/")) {
+            sqlPath += "/";
+        }
+        
+        // Get or create the nested path structure for Params→hook
+        Map<String, Object> paramsMap = (Map<String, Object>) organizedParams.computeIfAbsent("Params", k -> new HashMap<>());
+        Map<String, Object> hookMap = (Map<String, Object>) paramsMap.computeIfAbsent("hook", k -> new HashMap<>());
+        
+        // Update the sqlFile path
+        hookMap.put("sqlFile", sqlPath + sqlFile);
+    }
+}
+```
+
+These changes work together to capture the path from the UI, store it in the database, and then use it when generating the View JSON API response to properly combine the path with the SQL filename.
