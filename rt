@@ -1,0 +1,16 @@
+// Convert to string and replace placeholders
+try {
+    String jsonString = mapper.writeValueAsString(rootNode);
+    
+    // Replace placeholders with exact format
+    // Note the changed replacement strings to match exactly what we want
+    jsonString = jsonString.replace("\"PLACEHOLDER_DAILY\"", "\"\\\"/@daily/\\\"\"");
+    jsonString = jsonString.replace("\"PLACEHOLDER_WEEKLY\"", "\"\\\"/@weekly/\\\"\"");
+    jsonString = jsonString.replace("\"PLACEHOLDER_MONTHLY\"", "\"\\\"/@monthly/\\\"\"");
+    
+    // Convert back to JsonNode
+    return mapper.readTree(jsonString);
+} catch (Exception e) {
+    logger.error("Error processing JSON with replacements: " + e.getMessage());
+    return rootNode; // Fallback to original
+}
