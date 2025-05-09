@@ -1,63 +1,53 @@
-We're very close! The issue is in the escape sequences. Let's try a different replacement approach:
+I understand you need the exact format: `"Schedule_interval": "/"@daily/""`
+
+This is a challenging format because it contains unescaped quotes inside a JSON string. Let's try this specific approach:
 
 ```java
-@Override
-public JsonNode generateDpfJson(String dagId) {
-    // ... existing code ...
+// 3. Handle Schedule_interval formatting with unique placeholders
+if (dagParameter.getScheduleInterval() != null) {
+    String scheduleInterval = dagParameter.getScheduleInterval();
     
-    // Get the final JsonNode
-    JsonNode jsonNode = buildDpfJson(dagParameter);
-    
-    // For the exact Schedule_interval format, we'll need to manipulate the raw JSON string
-    try {
-        // Convert to string
-        String jsonString = mapper.writeValueAsString(jsonNode);
-        
-        // First handle common patterns with direct replacements 
-        jsonString = jsonString.replace("\"Schedule_interval\":\"@daily\"", 
-                                      "\"Schedule_interval\":\"/\\\"@daily/\\\"\"");
-        jsonString = jsonString.replace("\"Schedule_interval\":\"@weekly\"", 
-                                      "\"Schedule_interval\":\"/\\\"@weekly/\\\"\"");
-        jsonString = jsonString.replace("\"Schedule_interval\":\"@monthly\"", 
-                                      "\"Schedule_interval\":\"/\\\"@monthly/\\\"\"");
-        
-        // Convert back to JsonNode
-        return mapper.readTree(jsonString);
-    } catch (Exception e) {
-        logger.error("Error in JSON post-processing: " + e.getMessage());
-        return jsonNode; // Fallback to original
+    // Use unique placeholders that won't appear in regular JSON
+    if ("Daily".equalsIgnoreCase(scheduleInterval)) {
+        rootNode.put("Schedule_interval", "DAILY_PLACEHOLDER_123XYZ");
+    } else if ("Weekly".equalsIgnoreCase(scheduleInterval)) {
+        rootNode.put("Schedule_interval", "WEEKLY_PLACEHOLDER_123XYZ");
+    } else if ("Monthly".equalsIgnoreCase(scheduleInterval)) {
+        rootNode.put("Schedule_interval", "MONTHLY_PLACEHOLDER_123XYZ");
+    } else {
+        rootNode.put("Schedule_interval", scheduleInterval);
     }
+} else {
+    rootNode.put("Schedule_interval", "None");
 }
 
-private JsonNode buildDpfJson(DagParameter dagParameter) {
-    ObjectMapper mapper = new ObjectMapper();
-    ObjectNode rootNode = mapper.createObjectNode();
+// Later, after generating the whole JSON:
+
+// Convert to string for replacements
+try {
+    String jsonString = mapper.writeValueAsString(rootNode);
     
-    // ... Copy all the existing JSON building logic here ...
+    // Replace the placeholders with EXACT strings including the special quotes
+    // Use the escaped format for Java strings but the replacement will be exact
+    jsonString = jsonString.replace("\"DAILY_PLACEHOLDER_123XYZ\"", "\"\\\"/@daily/\\\"\"");
+    jsonString = jsonString.replace("\"WEEKLY_PLACEHOLDER_123XYZ\"", "\"\\\"/@weekly/\\\"\"");
+    jsonString = jsonString.replace("\"MONTHLY_PLACEHOLDER_123XYZ\"", "\"\\\"/@monthly/\\\"\"");
     
-    // For Schedule_interval, just use simple values that we'll replace later
-    if (dagParameter.getScheduleInterval() != null) {
-        String scheduleInterval = dagParameter.getScheduleInterval();
-        
-        if ("Daily".equalsIgnoreCase(scheduleInterval)) {
-            rootNode.put("Schedule_interval", "@daily");
-        } else if ("Weekly".equalsIgnoreCase(scheduleInterval)) {
-            rootNode.put("Schedule_interval", "@weekly");
-        } else if ("Monthly".equalsIgnoreCase(scheduleInterval)) {
-            rootNode.put("Schedule_interval", "@monthly");
-        } else {
-            rootNode.put("Schedule_interval", scheduleInterval);
-        }
-    }
-    
-    // ... rest of the JSON building ...
-    
-    return rootNode;
+    // Convert back to JsonNode
+    return mapper.readTree(jsonString);
+} catch (Exception e) {
+    logger.error("Error in JSON processing: " + e.getMessage());
+    return rootNode; // Fallback to original
 }
 ```
 
-The key change is in the replacement string:
-- Instead of `\"\\\"/@daily/\\\"\"` we're using `\"/\\\"@daily/\\\"\"` 
-- This format should produce the exact `"/"@daily/""` format you want
+The key is in the replacement strings. Using `"\"/@daily/\""` should give us the exact format you want. Let's try it this way.
 
-If this still doesn't work, we might need to try direct string manipulation with the final JSON right before returning it from the controller.
+If this still doesn't work, we could consider a more drastic approach by modifying the final JSON string right before returning it from the API.
+
+// Replace the placeholders with EXACT strings including the special quotes
+jsonString = jsonString.replace("\"DAILY_PLACEHOLDER_123XYZ\"", "\"/\\\"@daily/\\\"\"");
+jsonString = jsonString.replace("\"WEEKLY_PLACEHOLDER_123XYZ\"", "\"/\\\"@weekly/\\\"\"");
+jsonString = jsonString.replace("\"MONTHLY_PLACEHOLDER_123XYZ\"", "\"/\\\"@monthly/\\\"\"");
+
+
