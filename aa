@@ -1,55 +1,47 @@
-I now understand the exact format you want. You want the schedule interval to have literal quotes in it, like this:
-
-```json
-"Schedule_interval": "/"@daily/""
-```
-
-This is tricky because JSON normally escapes quotes within strings. We need to use a specific approach to handle this. Here's the corrected code:
-
-```java
-// 3. Handle Schedule_interval formatting
-if (dagParameter.getScheduleInterval() != null) {
-    String scheduleInterval = dagParameter.getScheduleInterval();
+@Override
+public JsonNode generateDpfJson(String dagId) {
+    // Fetch the DAG with tasks
+    DagParameter dagParameter = dagParameterRepository.findById(dagId)
+            .orElseThrow(() -> new ResourceNotFoundException("DAG not found with ID: " + dagId));
     
-    // Convert Daily/Weekly/Monthly to "/"@daily/""
-    if ("Daily".equalsIgnoreCase(scheduleInterval)) {
-        try {
-            // Create a literal JSON text node with the exact format needed
-            ObjectMapper tempMapper = new ObjectMapper();
-            JsonNode rawNode = tempMapper.getNodeFactory().textNode("\"/@daily/\"");
-            // Replace node without automatic escaping
-            ((ObjectNode) rootNode).set("Schedule_interval", rawNode);
-        } catch (Exception e) {
-            logger.error("Error setting Schedule_interval format: " + e.getMessage());
-            rootNode.put("Schedule_interval", "\"/\"@daily/\"\"");  // Fallback
-        }
-    } else if ("Weekly".equalsIgnoreCase(scheduleInterval)) {
-        try {
-            ObjectMapper tempMapper = new ObjectMapper();
-            JsonNode rawNode = tempMapper.getNodeFactory().textNode("\"/@weekly/\"");
-            ((ObjectNode) rootNode).set("Schedule_interval", rawNode);
-        } catch (Exception e) {
-            logger.error("Error setting Schedule_interval format: " + e.getMessage());
-            rootNode.put("Schedule_interval", "\"/\"@weekly/\"\"");  // Fallback
-        }
-    } else if ("Monthly".equalsIgnoreCase(scheduleInterval)) {
-        try {
-            ObjectMapper tempMapper = new ObjectMapper();
-            JsonNode rawNode = tempMapper.getNodeFactory().textNode("\"/@monthly/\"");
-            ((ObjectNode) rootNode).set("Schedule_interval", rawNode);
-        } catch (Exception e) {
-            logger.error("Error setting Schedule_interval format: " + e.getMessage());
-            rootNode.put("Schedule_interval", "\"/\"@monthly/\"\"");  // Fallback
+    ObjectMapper mapper = new ObjectMapper();
+    ObjectNode rootNode = mapper.createObjectNode();
+    
+    // ... other code to build the JSON ...
+    
+    // 3. Handle Schedule_interval formatting - use a placeholder
+    if (dagParameter.getScheduleInterval() != null) {
+        String scheduleInterval = dagParameter.getScheduleInterval();
+        
+        // Use a unique placeholder that won't appear in normal JSON
+        if ("Daily".equalsIgnoreCase(scheduleInterval)) {
+            rootNode.put("Schedule_interval", "PLACEHOLDER_DAILY");
+        } else if ("Weekly".equalsIgnoreCase(scheduleInterval)) {
+            rootNode.put("Schedule_interval", "PLACEHOLDER_WEEKLY");
+        } else if ("Monthly".equalsIgnoreCase(scheduleInterval)) {
+            rootNode.put("Schedule_interval", "PLACEHOLDER_MONTHLY");
+        } else {
+            rootNode.put("Schedule_interval", scheduleInterval);
         }
     } else {
-        // Use the original value if it's not one of the special cases
-        rootNode.put("Schedule_interval", scheduleInterval);
+        rootNode.put("Schedule_interval", "None");
     }
-} else {
-    rootNode.put("Schedule_interval", "None");
+    
+    // ... rest of the JSON generation ...
+    
+    // Generate JSON string with placeholders
+    String jsonString = rootNode.toString();
+    
+    // Replace placeholders with exact desired format (post-processing)
+    jsonString = jsonString.replace("\"PLACEHOLDER_DAILY\"", "\"/@daily/\"");
+    jsonString = jsonString.replace("\"PLACEHOLDER_WEEKLY\"", "\"/@weekly/\"");
+    jsonString = jsonString.replace("\"PLACEHOLDER_MONTHLY\"", "\"/@monthly/\"");
+    
+    // Convert back to JsonNode
+    try {
+        return mapper.readTree(jsonString);
+    } catch (Exception e) {
+        logger.error("Error processing JSON with replacements: " + e.getMessage());
+        return rootNode; // Fallback to original
+    }
 }
-```
-
-The key is to create a raw text node with the exact value containing the quotes, and then set it directly on the root node without going through the standard put() method that automatically escapes strings.
-
-If this still doesn't work, we might need to modify the ObjectMapper's configuration to control quote escaping or use a different serialization approach.
