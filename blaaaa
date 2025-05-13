@@ -291,3 +291,78 @@ Example of how the queryParameters value looks in detail (before escaping):
 ```
 
 This structure allows the View JSON API to transform it into the required DPF format with `parameterType` and `parameterValue` objects.
+
+
+
+
+
+
+
+
+Looking at the `addOrUpdateTask` API in DagController.java, I can see the issue. The `queryParametersJson` is being received as a request parameter but it's not being added to the parameters map. Here's the fix:
+
+### Required changes in DagController.java - addOrUpdateTask method:
+
+```java
+@PostMapping(value = "/{dagId}/tasks", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+public ResponseEntity<ApiResponse<DagParameterTaskDto>> addOrUpdateTask(
+        @PathVariable String dagId,
+        @RequestParam(value = "userDagTaskId", required = false) String userDagTaskId,
+        @RequestParam(value = "taskId") String taskId,
+        @RequestParam(value = "taskName") String taskName,
+        @RequestParam(value = "customTaskId") String customTaskId,
+        @RequestParam(value = "path", required = false) String path,
+        @RequestParam(value = "parameters", required = false) String parametersJson,
+        @RequestParam(value = "queryParameters", required = false) String queryParametersJson,
+        @RequestParam(value = "sqlQuery", required = false) String sqlQuery,
+        @RequestParam(value = "sqlFile", required = false) MultipartFile sqlFile,
+        @RequestParam(value = "nextTasks", required = false) String nextTasksInput) {
+
+    logger.info("Received request to add/update task for DAG: " + dagId);
+
+    MultipartFile safeSqlFile = sqlFile;
+    if(sqlFile == null) {
+        safeSqlFile = new EmptyMultipartFile("empty.sql");
+        logger.debug("Created empty file to replace null sqlFile");
+    }
+
+    try {
+        // Parse parameters from JSON string
+        Map<String, String> parameters = parseParametersJson(parametersJson);
+
+        // HIGHLIGHTED: Add queryParameters to parameters if provided
+        if (queryParametersJson != null && !queryParametersJson.trim().isEmpty()) {
+            parameters.put("queryParameters", queryParametersJson.trim());
+            logger.debug("Added queryParameters to parameters: " + queryParametersJson);
+        }
+
+        // Add path to parameters if provided and task is SQL-related
+        if (path != null && !path.trim().isEmpty() && 
+            (taskId.equals("BqTransform") || taskId.equals("BqSqlSensor"))) {
+            parameters.put("sqlPath", path.trim());
+            logger.debug("Added sqlPath to parameters: " + path);
+        }
+
+        // Parse and process nextTasks (comma-separated)
+        if (nextTasksInput != null && !nextTasksInput.trim().isEmpty()) {
+            // ... existing nextTasks processing code ...
+        }
+
+        // ... rest of the existing code ...
+    } catch (Exception e) {
+        // ... exception handling ...
+    }
+}
+```
+
+The key change is adding this block right after parsing the parametersJson:
+
+```java
+// HIGHLIGHTED: Add queryParameters to parameters if provided
+if (queryParametersJson != null && !queryParametersJson.trim().isEmpty()) {
+    parameters.put("queryParameters", queryParametersJson.trim());
+    logger.debug("Added queryParameters to parameters: " + queryParametersJson);
+}
+```
+
+This ensures that the queryParameters JSON string is stored in the parameters map and will be saved to the database along with other parameters.
