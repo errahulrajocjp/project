@@ -1,8 +1,3 @@
-Here are the key code changes highlighted:
-
-### 1. **New Section Added in `generateTaskNode` method**:
-
-```java
 // Special handling for queryParameters in BqTransform tasks
 if (task.getTaskId().equals("BqTransform")) {
     String queryParametersStr = task.getParameters().get("queryParameters");
@@ -10,6 +5,36 @@ if (task.getTaskId().equals("BqTransform")) {
         try {
             // Parse the queryParameters JSON string
             JsonNode queryParametersNode = mapper.readTree(queryParametersStr);
+            
+            // Transform flat structure to nested structure if needed
+            if (queryParametersNode.isArray()) {
+                ArrayNode transformedArray = mapper.createArrayNode();
+                
+                for (JsonNode paramNode : queryParametersNode) {
+                    ObjectNode transformedParam = mapper.createObjectNode();
+                    
+                    // Get values from flat structure
+                    String name = paramNode.has("name") ? paramNode.get("name").asText() : "";
+                    String type = paramNode.has("type") ? paramNode.get("type").asText() : "";
+                    String value = paramNode.has("value") ? paramNode.get("value").asText() : "";
+                    
+                    // Create nested structure
+                    transformedParam.put("name", name);
+                    
+                    ObjectNode parameterType = mapper.createObjectNode();
+                    parameterType.put("type", type);
+                    transformedParam.set("parameterType", parameterType);
+                    
+                    ObjectNode parameterValue = mapper.createObjectNode();
+                    parameterValue.put("value", value);
+                    transformedParam.set("parameterValue", parameterValue);
+                    
+                    transformedArray.add(transformedParam);
+                }
+                
+                // Use the transformed array
+                queryParametersNode = transformedArray;
+            }
             
             // Get or create the nested path structure for Params.hook
             Map<String, Object> paramsMap = (Map<String, Object>) organizedParams.computeIfAbsent("Params", k -> new HashMap<>());
@@ -21,43 +46,6 @@ if (task.getTaskId().equals("BqTransform")) {
             logger.debug("Added queryParameters to Params.hook for task: " + task.getTaskName());
         } catch (Exception e) {
             logger.warn("Failed to parse queryParameters for task " + task.getTaskName() + ": " + e.getMessage());
-            // If parsing fails, don't add queryParameters
         }
     }
 }
-```
-
-### 2. **Modified Section in `organizeParametersByLevel` method**:
-
-```java
-// Skip special parameters (but not queryParameters)
-if ("okTo".equals(paramName) || "sqlPath".equals(paramName) || paramName.startsWith("obs")) {
-    continue;
-}
-
-// Special handling for queryParameters - will be processed separately in generateTaskNode
-if ("queryParameters".equals(paramName) && task.getTaskId().equals("BqTransform")) {
-    continue;
-}
-```
-
-### 3. **Where to Insert the New Code**:
-
-In the `generateTaskNode` method, insert the new queryParameters handling code **AFTER** the sqlPath handling section and **BEFORE** the section that adds all organized parameters to the task node:
-
-```java
-// Handle sqlPath for SQL tasks
-if ((task.getTaskId().equals("BqTransform") || task.getTaskId().equals("BQ_SQL_Sensor")) &&
-    task.hasSqlFile()) {
-    // ... existing sqlPath code ...
-}
-
-// INSERT THE NEW QUERYPARAMETERS HANDLING CODE HERE
-
-// Add all organized parameters to the task node
-for (Map.Entry<String, Object> entry : organizedParams.entrySet()) {
-    // ... existing code ...
-}
-```
-
-These are the specific changes needed to properly display queryParameters in the view JSON API output.
