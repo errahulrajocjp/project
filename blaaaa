@@ -1,0 +1,293 @@
+I understand the requirement. You want the queryParameters to be properly formatted in the View JSON API as an array of objects with specific structure. Looking at the code and UI, here's what's needed:
+
+### 1. Update the Controller to handle queryParameters properly
+
+Since users can add multiple queryParameters through the UI (with + button), the frontend will send them as an array. The controller already handles this:
+
+```java
+@RequestParam(value = "queryParameters", required = false) String queryParametersJson,
+```
+
+### 2. Update the View JSON generation to format queryParameters correctly
+
+In the `generateTaskNode` method of DagServiceImpl.java, we need to handle the queryParameters to match the desired format:
+
+```java
+private ObjectNode generateTaskNode(TaskData task, ObjectMapper mapper) {
+    ObjectNode taskNode = mapper.createObjectNode();
+    
+    // ... existing code ...
+    
+    // Process parameters and organize by levels
+    Map<String, Object> organizedParams = organizeParametersByLevel(task);
+    
+    // Handle queryParameters specially for BqTransform tasks
+    if (task.getTaskId().equals("BqTransform") && task.getParameters().containsKey("queryParameters")) {
+        String queryParamsStr = task.getParameters().get("queryParameters");
+        
+        try {
+            // Parse the queryParameters JSON string
+            JsonNode queryParamsNode = mapper.readTree(queryParamsStr);
+            
+            // If it's an array, format each item correctly
+            if (queryParamsNode.isArray()) {
+                ArrayNode formattedQueryParams = mapper.createArrayNode();
+                
+                for (JsonNode param : queryParamsNode) {
+                    ObjectNode formattedParam = mapper.createObjectNode();
+                    
+                    // Extract values from the original format
+                    String name = param.get("name") != null ? param.get("name").asText() : "";
+                    String type = param.get("type") != null ? param.get("type").asText() : "STRING";
+                    String value = param.get("value") != null ? param.get("value").asText() : "";
+                    
+                    // Create the properly formatted structure
+                    formattedParam.put("name", name);
+                    
+                    ObjectNode parameterType = mapper.createObjectNode();
+                    parameterType.put("type", type);
+                    formattedParam.set("parameterType", parameterType);
+                    
+                    ObjectNode parameterValue = mapper.createObjectNode();
+                    parameterValue.put("value", value);
+                    formattedParam.set("parameterValue", parameterValue);
+                    
+                    formattedQueryParams.add(formattedParam);
+                }
+                
+                // Add to the hook section
+                Map<String, Object> paramsMap = (Map<String, Object>) organizedParams.computeIfAbsent("Params", k -> new HashMap<>());
+                Map<String, Object> hookMap = (Map<String, Object>) paramsMap.computeIfAbsent("hook", k -> new HashMap<>());
+                hookMap.put("queryParameters", formattedQueryParams);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to format queryParameters: " + e.getMessage());
+        }
+        
+        // Remove from regular parameters to avoid duplication
+        organizedParams.remove("queryParameters");
+    }
+    
+    // ... rest of the existing code ...
+}
+```
+
+### 3. Update organizeParametersByLevel to skip queryParameters for special handling
+
+```java
+private Map<String, Object> organizeParametersByLevel(TaskData task) {
+    Map<String, Object> organizedParams = new HashMap<>();
+    
+    // ... existing code ...
+    
+    // Process each parameter
+    for (Map.Entry<String, String> param : task.getParameters().entrySet()) {
+        String paramName = param.getKey();
+        String paramValue = param.getValue();
+        
+        // Skip special parameters
+        if ("okTo".equals(paramName) || "sqlPath".equals(paramName) || 
+            "queryParameters".equals(paramName) || paramName.startsWith("obs")) {
+            continue;
+        }
+        
+        // ... rest of existing code ...
+    }
+    
+    return organizedParams;
+}
+```
+
+### 4. Expected data flow
+
+1. Frontend sends queryParameters as JSON array:
+```json
+[
+  {
+    "name": "process_dt",
+    "type": "STRING",
+    "value": "2022-11-05"
+  }
+]
+```
+
+2. It gets stored in the database as a JSON string
+
+3. When View JSON API is called, it formats it to:
+```json
+"queryParameters": [
+  {
+    "name": "process_dt",
+    "parameterType": {
+      "type": "STRING"
+    },
+    "parameterValue": {
+      "value": "2022-11-05"
+    }
+  }
+]
+```
+
+This approach ensures that queryParameters are properly formatted in the View JSON API response while maintaining compatibility with the existing storage mechanism.
+
+
+
+
+
+Here are the highlighted code changes for the queryParameters requirement:
+
+### 1. In generateTaskNode method (DagServiceImpl.java)
+
+```java
+private ObjectNode generateTaskNode(TaskData task, ObjectMapper mapper) {
+    ObjectNode taskNode = mapper.createObjectNode();
+    
+    // ... existing code ...
+    
+    // Process parameters and organize by levels
+    Map<String, Object> organizedParams = organizeParametersByLevel(task);
+    
+    // HIGHLIGHTED: Handle queryParameters specially for BqTransform tasks
+    if (task.getTaskId().equals("BqTransform") && task.getParameters().containsKey("queryParameters")) {
+        String queryParamsStr = task.getParameters().get("queryParameters");
+        
+        try {
+            // Parse the queryParameters JSON string
+            JsonNode queryParamsNode = mapper.readTree(queryParamsStr);
+            
+            // If it's an array, format each item correctly
+            if (queryParamsNode.isArray()) {
+                ArrayNode formattedQueryParams = mapper.createArrayNode();
+                
+                for (JsonNode param : queryParamsNode) {
+                    ObjectNode formattedParam = mapper.createObjectNode();
+                    
+                    // Extract values from the original format
+                    String name = param.get("name") != null ? param.get("name").asText() : "";
+                    String type = param.get("type") != null ? param.get("type").asText() : "STRING";
+                    String value = param.get("value") != null ? param.get("value").asText() : "";
+                    
+                    // Create the properly formatted structure
+                    formattedParam.put("name", name);
+                    
+                    ObjectNode parameterType = mapper.createObjectNode();
+                    parameterType.put("type", type);
+                    formattedParam.set("parameterType", parameterType);
+                    
+                    ObjectNode parameterValue = mapper.createObjectNode();
+                    parameterValue.put("value", value);
+                    formattedParam.set("parameterValue", parameterValue);
+                    
+                    formattedQueryParams.add(formattedParam);
+                }
+                
+                // Add to the hook section
+                Map<String, Object> paramsMap = (Map<String, Object>) organizedParams.computeIfAbsent("Params", k -> new HashMap<>());
+                Map<String, Object> hookMap = (Map<String, Object>) paramsMap.computeIfAbsent("hook", k -> new HashMap<>());
+                hookMap.put("queryParameters", formattedQueryParams);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to format queryParameters: " + e.getMessage());
+        }
+    }
+    
+    // ... rest of the existing code (handling sqlPath for SQL tasks) ...
+    
+    // ... rest of the existing code ...
+}
+```
+
+### 2. In organizeParametersByLevel method (DagServiceImpl.java)
+
+```java
+private Map<String, Object> organizeParametersByLevel(TaskData task) {
+    Map<String, Object> organizedParams = new HashMap<>();
+    
+    // ... existing code ...
+    
+    // Process each parameter
+    for (Map.Entry<String, String> param : task.getParameters().entrySet()) {
+        String paramName = param.getKey();
+        String paramValue = param.getValue();
+        
+        // Skip special parameters
+        // HIGHLIGHTED: Added "queryParameters" to the skip list
+        if ("okTo".equals(paramName) || "sqlPath".equals(paramName) || 
+            "queryParameters".equals(paramName) || paramName.startsWith("obs")) {
+            continue;
+        }
+        
+        // Skip empty parameters
+        if (paramValue == null || paramValue.trim().isEmpty()) {
+            continue;
+        }
+        
+        // ... rest of the existing code ...
+    }
+    
+    return organizedParams;
+}
+```
+
+The key changes are:
+1. Added special handling for queryParameters in the `generateTaskNode` method to format them according to the DPF standard
+2. Added "queryParameters" to the skip list in `organizeParametersByLevel` method so it doesn't get processed as a regular parameter
+3. The special handling transforms the simple array format into the nested structure with `parameterType` and `parameterValue` objects
+
+
+
+
+
+
+When saved to the database, the queryParameters will be stored as part of the tasks JSON array in the DagParameter table. Here's how it will look:
+
+### Database: BEAMX_DAG_PARAMETER Table - tasks column (CLOB)
+
+```json
+[
+  {
+    "userDagTaskId": "UDID12345_BqTransform",
+    "taskId": "BqTransform",
+    "taskName": "bqTransformLoad_SQL",
+    "customTaskId": "bqTransformLoad",
+    "sequenceOrder": 1,
+    "parameters": {
+      "gcp_conn_id": "gcp_conn_id_gklv",
+      "projectId": "gklv_project_id",
+      "datasetId": "db_vzt_fw_tgt_env_tbls",
+      "tableId": "bqtransformload_composer_test_csv_1",
+      "useLegacySql": "false",
+      "writeDisposition": "WRITE_TRUNCATE",
+      "queryParameters": "[{\"name\":\"process_dt\",\"type\":\"STRING\",\"value\":\"2022-11-05\"},{\"name\":\"execution_date\",\"type\":\"DATE\",\"value\":\"2022-11-06\"}]",
+      "sqlPath": "ovls-ingestion-file/code/sql/",
+      "okTo": "End"
+    },
+    "sqlFileName": "bqload_composer_test_csv_11.sql",
+    "sqlSource": "file"
+  }
+]
+```
+
+Key points:
+1. The queryParameters is stored as a JSON string within the parameters map
+2. The value is a stringified JSON array containing the parameter objects
+3. Each parameter object has `name`, `type`, and `value` fields as sent from the frontend
+4. When retrieved, the View JSON API will parse this string and format it properly for the DPF standard JSON
+
+Example of how the queryParameters value looks in detail (before escaping):
+```json
+[
+  {
+    "name": "process_dt",
+    "type": "STRING",
+    "value": "2022-11-05"
+  },
+  {
+    "name": "execution_date",
+    "type": "DATE",
+    "value": "2022-11-06"
+  }
+]
+```
+
+This structure allows the View JSON API to transform it into the required DPF format with `parameterType` and `parameterValue` objects.
