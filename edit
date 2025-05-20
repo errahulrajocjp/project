@@ -10,12 +10,10 @@ public DagParameterTaskDto addOrUpdateTask(String dagId, String userDagTaskId, S
     Task taskType = taskRepository.findById(taskId)
             .orElseThrow(() -> new ResourceNotFoundException("Task type not found with ID: " + taskId));
 
-    // CRITICAL CHANGE: Check if this is an update operation
     boolean isUpdate = (userDagTaskId != null && !userDagTaskId.isEmpty());
     
-    // For new tasks only, perform SQL validation
+    // Only apply SQL validation for NEW tasks, not updates
     if (!isUpdate && TaskTypeConstants.isSqlTaskType(taskId)) {
-        // Only validate for NEW tasks, SKIP validation for updates
         boolean hasQuery = parameters != null && parameters.containsKey("query") && !parameters.get("query").isEmpty();
         boolean hasFile = sqlFile != null && !sqlFile.isEmpty();
         
@@ -25,7 +23,7 @@ public DagParameterTaskDto addOrUpdateTask(String dagId, String userDagTaskId, S
     }
 
     if (isUpdate) {
-        // Update existing task - skip SQL validation entirely
+        // Update existing task
         logger.info("Updating existing task - skipping SQL content validation");
         return updateTask(dagParameter, userDagTaskId, taskId, taskName, customTaskId, parameters, sqlFile, "rahul.kumar");
     } else {
@@ -33,3 +31,79 @@ public DagParameterTaskDto addOrUpdateTask(String dagId, String userDagTaskId, S
         return addTask(dagParameter, taskId, taskName, customTaskId, parameters, sqlFile, "rahul.kumar");
     }
 }
+
+
+
+
+
+private void processTaskSqlContent(String dagId, String userDagTaskId, TaskData taskData,
+        Map<String, String> parameters, MultipartFile sqlFile, String createdBy) {
+
+    // Format queryParameters before storing (if provided)
+    if (parameters.containsKey("queryParameters")) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode queryParamsNode = mapper.readTree(parameters.get("queryParameters"));
+            String formattedJson = mapper.writeValueAsString(queryParamsNode);
+            parameters.put("queryParameters", formattedJson);
+            logger.debug("Formatted queryParameters for storage: " + formattedJson);
+        } catch (Exception e) {
+            logger.warn("Failed to format queryParameters for storage: " + e.getMessage());
+        }
+    }
+
+    // Case 1: SQL direct query in parameters
+    if (parameters.containsKey("query")) {
+        logger.info("Processing direct SQL query for task: " + userDagTaskId);
+        
+        // Set SQL source to query
+        taskData.setSqlFileName(null);
+        taskData.setSqlSource("query");
+        
+        // If there was a previous file, it's no longer used
+        dagFileStorageService.deleteFileIfExists(dagId, userDagTaskId);
+        taskData.getParameters().remove("sqlFile");
+    }
+    // Case 2: SQL file provided
+    else if (sqlFile != null && !sqlFile.isEmpty()) {
+        logger.info("Processing SQL file upload for task: " + userDagTaskId);
+        
+        try {
+            // Store file
+            FileContent fileContent = dagFileStorageService.storeFile(dagId, userDagTaskId, sqlFile, createdBy);
+            
+            // Update task with file information
+            taskData.setSqlFileName(sqlFile.getOriginalFilename());
+            taskData.setSqlSource("file");
+            
+            // Add file reference to parameters
+            taskData.getParameters().put("sqlFile", sqlFile.getOriginalFilename());
+            
+            // Remove any direct query if it existed before
+            taskData.getParameters().remove("query");
+        } catch (IOException e) {
+            logger.error("Failed to store SQL file: " + e.getMessage());
+            throw new RuntimeException("Failed to store SQL file: " + e.getMessage(), e);
+        }
+    }
+    // Case 3: Non-SQL task (no query or file needed)
+    else if (!taskData.isSqlTask()) {
+        logger.info("Non-SQL task type. No query or file processing needed.");
+        taskData.setSqlFileName(null);
+        taskData.setSqlSource(null);
+    }
+    // Case 4: Existing task with SQL content already (update case)
+    else if (taskData.isSqlTask() && (taskData.hasSqlFile() || taskData.hasSqlQuery())) {
+        // This is an update and task already has SQL content - preserve it
+        logger.info("Task " + userDagTaskId + " already has SQL content - preserving existing SQL");
+    }
+    // Case 5: SQL task with no SQL content (error case - only for new tasks)
+    else if (taskData.isSqlTask()) {
+        throw new BadRequestException(taskData.getTaskId() + " requires either an SQL query or SQL file.");
+    }
+}
+
+
+
+
+
