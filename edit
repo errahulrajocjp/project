@@ -1,18 +1,67 @@
-// Before: This might be incorrectly evaluated
-if (!hasQuery && !hasFile && !hasExistingSqlContent) {
-    throw new BadRequestException(taskId + " requires either an SQL query or SQL file.");
-}
+@Override
+public DagParameterTaskDto addOrUpdateTask(String dagId, String userDagTaskId, String taskId, String taskName, String customTaskId,
+        Map<String, String> parameters, MultipartFile sqlFile) {
 
-// Refactored for clarity:
-if (isUpdate) {
-    // For updates, allow if EITHER current request has SQL OR existing task has SQL
-    boolean hasSqlContent = hasQuery || hasFile || hasExistingSqlContent;
-    if (!hasSqlContent) {
-        throw new BadRequestException(taskId + " requires either an SQL query or SQL file.");
-    }
-} else {
-    // For new tasks, require SQL in current request only
-    if (!hasQuery && !hasFile) {
-        throw new BadRequestException(taskId + " requires either an SQL query or SQL file.");
+    // Fetch the DAG
+    DagParameter dagParameter = dagParameterRepository.findById(dagId)
+            .orElseThrow(() -> new ResourceNotFoundException("DAG not found with ID: " + dagId));
+
+    // Validate task type exists
+    Task taskType = taskRepository.findById(taskId)
+            .orElseThrow(() -> new ResourceNotFoundException("Task type not found with ID: " + taskId));
+
+    boolean isUpdate = (userDagTaskId != null && !userDagTaskId.isEmpty());
+    
+    if (isUpdate) {
+        // When updating an existing task, we'll check if task requires SQL validation
+        if (TaskTypeConstants.isSqlTaskType(taskId)) {
+            // Check current request
+            boolean hasQuery = parameters != null && parameters.containsKey("query") && !parameters.get("query").isEmpty();
+            boolean hasFile = sqlFile != null && !sqlFile.isEmpty();
+            
+            // If no SQL in current request, check if it's in database already
+            if (!hasQuery && !hasFile) {
+                // Look for file in database first
+                boolean fileExists = fileContentRepository.findByDagIdAndTaskId(dagId, userDagTaskId).isPresent();
+                
+                if (fileExists) {
+                    logger.info("Existing SQL file found in database for task: " + userDagTaskId);
+                    // Skip SQL validation since file exists
+                } else {
+                    // Check task parameters for SQL query
+                    TaskData existingTask = null;
+                    for (TaskData task : dagParameter.getTasks()) {
+                        if (task.getUserDagTaskId().equals(userDagTaskId)) {
+                            existingTask = task;
+                            break;
+                        }
+                    }
+                    
+                    if (existingTask != null && existingTask.hasSqlQuery()) {
+                        logger.info("Existing SQL query found in task: " + userDagTaskId);
+                        // Skip SQL validation since query exists
+                    } else {
+                        // No SQL found - require it for update
+                        throw new BadRequestException(taskId + " requires either an SQL query or SQL file.");
+                    }
+                }
+            }
+        }
+        
+        // Proceed with update
+        return updateTask(dagParameter, userDagTaskId, taskId, taskName, customTaskId, parameters, sqlFile, "rahul.kumar");
+    } else {
+        // For new tasks, apply the standard validation
+        if (TaskTypeConstants.isSqlTaskType(taskId)) {
+            boolean hasQuery = parameters != null && parameters.containsKey("query") && !parameters.get("query").isEmpty();
+            boolean hasFile = sqlFile != null && !sqlFile.isEmpty();
+            
+            if (!hasQuery && !hasFile) {
+                throw new BadRequestException(taskId + " requires either an SQL query or SQL file.");
+            }
+        }
+        
+        // Proceed with creation
+        return addTask(dagParameter, taskId, taskName, customTaskId, parameters, sqlFile, "rahul.kumar");
     }
 }
