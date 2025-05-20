@@ -12,95 +12,41 @@ public DagParameterTaskDto addOrUpdateTask(String dagId, String userDagTaskId, S
 
     boolean isUpdate = (userDagTaskId != null && !userDagTaskId.isEmpty());
     
-    // For update operations, find the existing task
-    TaskData existingTask = null;
+    // For update operations, explicitly check for existing SQL content
+    boolean hasExistingSqlContent = false;
     if (isUpdate) {
-        for (TaskData task : dagParameter.getTasks()) {
-            if (task.getUserDagTaskId().equals(userDagTaskId)) {
-                existingTask = task;
-                break;
+        // Check if we can find the SQL file in the database directly
+        Optional<FileContent> existingFile = fileContentRepository.findByDagIdAndTaskId(dagId, userDagTaskId);
+        if (existingFile.isPresent()) {
+            hasExistingSqlContent = true;
+            logger.info("Found existing SQL file for task: " + userDagTaskId);
+        } else {
+            // Check if task has SQL query in parameters
+            for (TaskData task : dagParameter.getTasks()) {
+                if (task.getUserDagTaskId().equals(userDagTaskId)) {
+                    // Check if it has SQL file or query
+                    hasExistingSqlContent = task.hasSqlFile() || task.hasSqlQuery();
+                    logger.info("Task SQL status for " + userDagTaskId + ": " + 
+                                "hasSqlFile=" + task.hasSqlFile() + 
+                                ", hasSqlQuery=" + task.hasSqlQuery());
+                    break;
+                }
             }
-        }
-        
-        if (existingTask == null) {
-            throw new ResourceNotFoundException("Task not found with ID: " + userDagTaskId);
         }
     }
 
     // Additional validation for SQL task types
     if (TaskTypeConstants.isSqlTaskType(taskId)) {
-        // Ensure either sqlQuery or sqlFile is provided in the request OR task already has SQL content
+        // Ensure either sqlQuery or sqlFile is provided in current request
         boolean hasQuery = parameters != null && parameters.containsKey("query") && !parameters.get("query").isEmpty();
         boolean hasFile = sqlFile != null && !sqlFile.isEmpty();
-        boolean hasExistingSqlContent = isUpdate && 
-                                       (existingTask.hasSqlFile() || 
-                                        existingTask.hasSqlQuery());
-
-        if (!hasQuery && !hasFile && !hasExistingSqlContent) {
-            throw new BadRequestException(taskId + " requires either an SQL query or SQL file.");
-        }
-    }
-
-    if (isUpdate) {
-        // Update existing task
-        return updateTask(dagParameter, userDagTaskId, taskId, taskName, customTaskId, parameters, sqlFile, "rahul.kumar");
-    } else {
-        // Add new task
-        return addTask(dagParameter, taskId, taskName, customTaskId, parameters, sqlFile, "rahul.kumar");
-    }
-}
-
-
-
-
-
-
-
-
-
-@Override
-public DagParameterTaskDto addOrUpdateTask(String dagId, String userDagTaskId, String taskId, String taskName, String customTaskId,
-        Map<String, String> parameters, MultipartFile sqlFile) {
-
-    // Fetch the DAG
-    DagParameter dagParameter = dagParameterRepository.findById(dagId)
-            .orElseThrow(() -> new ResourceNotFoundException("DAG not found with ID: " + dagId));
-
-    // Validate task type exists
-    Task taskType = taskRepository.findById(taskId)
-            .orElseThrow(() -> new ResourceNotFoundException("Task type not found with ID: " + taskId));
-
-    boolean isUpdate = (userDagTaskId != null && !userDagTaskId.isEmpty());
-    
-    // ----- BEGIN HIGHLIGHTED CODE -----
-    // For update operations, find the existing task
-    TaskData existingTask = null;
-    if (isUpdate) {
-        for (TaskData task : dagParameter.getTasks()) {
-            if (task.getUserDagTaskId().equals(userDagTaskId)) {
-                existingTask = task;
-                break;
-            }
-        }
         
-        if (existingTask == null) {
-            throw new ResourceNotFoundException("Task not found with ID: " + userDagTaskId);
-        }
-    }
-    // ----- END HIGHLIGHTED CODE -----
-
-    // Additional validation for SQL task types
-    if (TaskTypeConstants.isSqlTaskType(taskId)) {
-        // Ensure either sqlQuery or sqlFile is provided in the request OR task already has SQL content
-        boolean hasQuery = parameters != null && parameters.containsKey("query") && !parameters.get("query").isEmpty();
-        boolean hasFile = sqlFile != null && !sqlFile.isEmpty();
-        // ----- BEGIN HIGHLIGHTED CODE -----
-        boolean hasExistingSqlContent = isUpdate && 
-                                       (existingTask.hasSqlFile() || 
-                                        existingTask.hasSqlQuery());
+        logger.info("SQL content validation: hasQuery=" + hasQuery + 
+                   ", hasFile=" + hasFile + 
+                   ", hasExistingSqlContent=" + hasExistingSqlContent + 
+                   ", isUpdate=" + isUpdate);
 
         if (!hasQuery && !hasFile && !hasExistingSqlContent) {
-        // ----- END HIGHLIGHTED CODE -----
             throw new BadRequestException(taskId + " requires either an SQL query or SQL file.");
         }
     }
