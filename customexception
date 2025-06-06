@@ -1,0 +1,364 @@
+# Custom Exception Design Guide
+## When to Create Checked vs Unchecked Exceptions in Contract Management
+
+---
+
+## 🎯 **Decision Framework**
+
+### **Use Custom CHECKED Exceptions when:**
+- ✅ **Recoverable conditions** that calling code should handle
+- ✅ **Expected business scenarios** in normal operation
+- ✅ **External system failures** (temporary/recoverable)
+- ✅ **Caller can take meaningful action** to resolve
+
+### **Use Custom UNCHECKED Exceptions when:**
+- ❌ **Programming errors** or bugs in logic
+- ❌ **Business rule violations** (data integrity issues)
+- ❌ **Configuration errors** or system setup problems
+- ❌ **Conditions caller typically cannot recover from**
+
+---
+
+## 📋 **Custom CHECKED Exceptions - Contract Scenarios**
+
+### **Scenario 1: Contract Approval Workflow**
+```java
+// Custom Checked Exception
+public class ContractApprovalPendingException extends Exception {
+    private final String contractId;
+    private final String currentApprover;
+    private final LocalDateTime pendingSince;
+    
+    public ContractApprovalPendingException(String contractId, String currentApprover, LocalDateTime pendingSince) {
+        super("Contract " + contractId + " is pending approval from " + currentApprover 
+              + " since " + pendingSince);
+        this.contractId = contractId;
+        this.currentApprover = currentApprover;
+        this.pendingSince = pendingSince;
+    }
+    
+    // Getters for recovery information
+    public String getContractId() { return contractId; }
+    public String getCurrentApprover() { return currentApprover; }
+    public LocalDateTime getPendingSince() { return pendingSince; }
+}
+
+// Usage - Caller MUST handle this
+public class ContractService {
+    public void activateContract(String contractId) throws ContractApprovalPendingException {
+        Contract contract = findContract(contractId);
+        
+        if (!contract.isApproved()) {
+            throw new ContractApprovalPendingException(
+                contractId, 
+                contract.getCurrentApprover(),
+                contract.getSubmittedForApproval()
+            );
+        }
+        
+        contract.setStatus(ContractStatus.ACTIVE);
+    }
+}
+
+// Calling code - Must handle the exception
+public class ContractController {
+    public ResponseEntity<String> activateContract(@PathVariable String contractId) {
+        try {
+            contractService.activateContract(contractId);
+            return ResponseEntity.ok("Contract activated successfully");
+            
+        } catch (ContractApprovalPendingException e) {
+            // Recoverable - caller can take action
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body("Contract pending approval from " + e.getCurrentApprover() 
+                     + ". Please follow up or wait for approval.");
+        }
+    }
+}
+```
+
+### **Scenario 2: External System Integration**
+```java
+// Custom Checked Exception
+public class ContractValidationServiceUnavailableException extends Exception {
+    private final String serviceUrl;
+    private final int retryAfterSeconds;
+    
+    public ContractValidationServiceUnavailableException(String serviceUrl, int retryAfterSeconds, Throwable cause) {
+        super("Contract validation service at " + serviceUrl + " is temporarily unavailable. Retry after " 
+              + retryAfterSeconds + " seconds.", cause);
+        this.serviceUrl = serviceUrl;
+        this.retryAfterSeconds = retryAfterSeconds;
+    }
+    
+    public String getServiceUrl() { return serviceUrl; }
+    public int getRetryAfterSeconds() { return retryAfterSeconds; }
+}
+
+// Usage
+public class ExternalValidationService {
+    public ValidationResult validateContract(Contract contract) 
+            throws ContractValidationServiceUnavailableException {
+        try {
+            return httpClient.post(validationEndpoint, contract);
+        } catch (ConnectTimeoutException | HttpServerErrorException e) {
+            // Temporary failure - caller can retry
+            throw new ContractValidationServiceUnavailableException(
+                validationEndpoint, 30, e);
+        }
+    }
+}
+
+// Calling code
+public class ContractProcessor {
+    public void processContract(Contract contract) {
+        try {
+            ValidationResult result = validationService.validateContract(contract);
+            // Process normally
+            
+        } catch (ContractValidationServiceUnavailableException e) {
+            // Recoverable - schedule retry
+            logger.warn("Validation service unavailable: {}", e.getMessage());
+            scheduleRetry(contract, e.getRetryAfterSeconds());
+        }
+    }
+}
+```
+
+### **Scenario 3: Business Rule Conflicts**
+```java
+// Custom Checked Exception
+public class ContractConflictException extends Exception {
+    private final List<String> conflictingContractIds;
+    private final ConflictType conflictType;
+    
+    public enum ConflictType {
+        OVERLAPPING_DATES, DUPLICATE_VENDOR, EXCLUSIVE_TERRITORY
+    }
+    
+    public ContractConflictException(ConflictType conflictType, List<String> conflictingContractIds) {
+        super("Contract conflict detected: " + conflictType + " with contracts: " + conflictingContractIds);
+        this.conflictType = conflictType;
+        this.conflictingContractIds = new ArrayList<>(conflictingContractIds);
+    }
+    
+    public List<String> getConflictingContractIds() { return new ArrayList<>(conflictingContractIds); }
+    public ConflictType getConflictType() { return conflictType; }
+}
+
+// Usage
+public class ContractConflictChecker {
+    public void checkForConflicts(Contract newContract) throws ContractConflictException {
+        List<Contract> existing = findOverlappingContracts(newContract);
+        
+        if (!existing.isEmpty()) {
+            List<String> conflictIds = existing.stream()
+                .map(Contract::getContractId)
+                .collect(Collectors.toList());
+                
+            throw new ContractConflictException(
+                ConflictType.OVERLAPPING_DATES, conflictIds);
+        }
+    }
+}
+
+// Calling code
+public class ContractCreationService {
+    public String createContract(ContractRequest request) {
+        try {
+            Contract contract = new Contract(request);
+            conflictChecker.checkForConflicts(contract);
+            return contractRepository.save(contract).getContractId();
+            
+        } catch (ContractConflictException e) {
+            // Recoverable - user can resolve conflicts
+            throw new BusinessConflictException(
+                "Cannot create contract due to conflicts with: " + 
+                String.join(", ", e.getConflictingContractIds()) +
+                ". Please review and modify dates or terms."
+            );
+        }
+    }
+}
+```
+
+---
+
+## 🚫 **Custom UNCHECKED Exceptions - Contract Scenarios**
+
+### **Scenario 1: Business Rule Violations (Programming Errors)**
+```java
+// Custom Unchecked Exception
+public class InvalidContractStateException extends RuntimeException {
+    private final String contractId;
+    private final ContractStatus currentStatus;
+    private final ContractStatus attemptedStatus;
+    
+    public InvalidContractStateException(String contractId, ContractStatus currentStatus, 
+                                       ContractStatus attemptedStatus) {
+        super("Invalid state transition for contract " + contractId + 
+              ": cannot change from " + currentStatus + " to " + attemptedStatus);
+        this.contractId = contractId;
+        this.currentStatus = currentStatus;
+        this.attemptedStatus = attemptedStatus;
+    }
+    
+    // Getters for debugging
+    public String getContractId() { return contractId; }
+    public ContractStatus getCurrentStatus() { return currentStatus; }
+    public ContractStatus getAttemptedStatus() { return attemptedStatus; }
+}
+
+// Usage - Programming error, caller cannot recover
+public class Contract {
+    public void setStatus(ContractStatus newStatus) {
+        // Business rule: TERMINATED contracts cannot be reactivated
+        if (this.status == ContractStatus.TERMINATED && 
+            newStatus == ContractStatus.ACTIVE) {
+            throw new InvalidContractStateException(
+                this.contractId, this.status, newStatus);
+        }
+        
+        this.status = newStatus;
+    }
+}
+
+// This is a programming error - calling code should prevent this
+public class ContractService {
+    public void reactivateContract(String contractId) {
+        Contract contract = findContract(contractId);
+        
+        // BUG: Should check if contract is terminated first!
+        contract.setStatus(ContractStatus.ACTIVE); // May throw InvalidContractStateException
+    }
+}
+```
+
+### **Scenario 2: Data Integrity Violations**
+```java
+// Custom Unchecked Exception
+public class ContractDataIntegrityException extends RuntimeException {
+    private final String contractId;
+    private final String violationType;
+    private final String fieldName;
+    
+    public ContractDataIntegrityException(String contractId, String fieldName, String violationType) {
+        super("Data integrity violation in contract " + contractId + 
+              ": " + violationType + " in field '" + fieldName + "'");
+        this.contractId = contractId;
+        this.fieldName = fieldName;
+        this.violationType = violationType;
+    }
+    
+    public String getContractId() { return contractId; }
+    public String getFieldName() { return fieldName; }
+    public String getViolationType() { return violationType; }
+}
+
+// Usage
+public class ContractValidator {
+    public void validateContractData(Contract contract) {
+        // This should never happen if application logic is correct
+        if (contract.getStartDate().isAfter(contract.getEndDate())) {
+            throw new ContractDataIntegrityException(
+                contract.getContractId(), 
+                "startDate/endDate", 
+                "Start date is after end date"
+            );
+        }
+        
+        // This indicates a serious bug in the application
+        if (contract.getValue().compareTo(BigDecimal.ZERO) < 0) {
+            throw new ContractDataIntegrityException(
+                contract.getContractId(),
+                "value",
+                "Negative contract value"
+            );
+        }
+    }
+}
+```
+
+### **Scenario 3: Configuration Errors**
+```java
+// Custom Unchecked Exception  
+public class ContractConfigurationException extends RuntimeException {
+    private final String configKey;
+    private final String expectedFormat;
+    
+    public ContractConfigurationException(String configKey, String expectedFormat, String actualValue) {
+        super("Invalid configuration for '" + configKey + "'. Expected: " + expectedFormat + 
+              ", but got: '" + actualValue + "'");
+        this.configKey = configKey;
+        this.expectedFormat = expectedFormat;
+    }
+    
+    public String getConfigKey() { return configKey; }
+    public String getExpectedFormat() { return expectedFormat; }
+}
+
+// Usage
+public class ContractNumberGenerator {
+    private String contractPrefix;
+    
+    @PostConstruct
+    public void initialize() {
+        contractPrefix = environment.getProperty("contract.id.prefix");
+        
+        // Configuration error - should be fixed before deployment
+        if (contractPrefix == null || !contractPrefix.matches("[A-Z]{3}")) {
+            throw new ContractConfigurationException(
+                "contract.id.prefix",
+                "3 uppercase letters (e.g., 'CNT')",
+                contractPrefix
+            );
+        }
+    }
+}
+```
+
+---
+
+## 📊 **Decision Matrix**
+
+| **Scenario** | **Exception Type** | **Reason** | **Caller Action** |
+|--------------|-------------------|------------|-------------------|
+| **External Service Down** | ✅ **Checked** | Temporary, recoverable | Retry later, fallback |
+| **Approval Pending** | ✅ **Checked** | Expected business flow | Wait, notify user, follow up |
+| **Contract Conflicts** | ✅ **Checked** | Business validation | Ask user to resolve |
+| **Invalid State Transition** | ❌ **Unchecked** | Programming error | Fix the bug |
+| **Data Integrity Violation** | ❌ **Unchecked** | Serious application bug | Fix data validation |
+| **Configuration Error** | ❌ **Unchecked** | Setup/deployment issue | Fix configuration |
+
+---
+
+## 🏗️ **Best Practices**
+
+### **For Checked Exceptions:**
+1. **Provide Recovery Information** - Include data that helps caller resolve the issue
+2. **Document Expected Scenarios** - When and why this exception occurs
+3. **Keep Hierarchy Shallow** - Avoid deep inheritance chains
+4. **Include Specific Details** - Contract IDs, timestamps, current state
+
+### **For Unchecked Exceptions:**
+1. **Include Debugging Information** - Contract ID, field names, expected vs actual values
+2. **Fail Fast** - Throw immediately when inconsistency detected  
+3. **Clear Error Messages** - Help developers identify the root cause
+4. **Log Context** - Include enough information for troubleshooting
+
+### **General Guidelines:**
+1. **Don't Force Checked** - If caller typically cannot recover, use unchecked
+2. **Consider the API** - Will every caller want to handle this differently?
+3. **Business vs Technical** - Business flow issues → checked, technical issues → unchecked
+4. **Recovery Possibility** - Can the caller do something meaningful? → checked
+
+---
+
+## 🎯 **Key Takeaway**
+
+**Ask yourself:** *"Can the calling code take a meaningful action to recover from this condition, and is this a normal part of business flow?"*
+
+- **YES** → Custom **Checked** Exception
+- **NO** → Custom **Unchecked** Exception
+
+The contract management examples show that the choice depends on whether the exception represents expected business scenarios (checked) or programming/configuration errors (unchecked).
