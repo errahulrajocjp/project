@@ -1,0 +1,428 @@
+// Cart.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@Data
+public class Cart implements Serializable {
+    private String cartId;
+    private CartHeader cartHeader;
+    private RefundOrderDetails refundOrderDetails;
+    private CartOrderHeader orderDetails;
+}
+
+// CartOrderHeader.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@Data
+public class CartOrderHeader implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private CartCustomerType customerType;
+    private String userType;
+    private String accountType;
+    private String locationCode;
+    private String regionId;
+    private String billingSystem;
+    private String paperlessInd;
+    private String creditApprovalStatus;
+    private String creditStatusReason;
+    private String creditAdvisory;
+    private String creditClass;
+    private String securityDepositAmount;
+    private String fwaSecurityDepositAmount;
+    private String taxSystem;
+    private List<TaxDetailByZipCode> totalTaxAmountByZipCodeList = new ArrayList<>();
+    private String totalTaxAmount;
+    private String purchaseOrderNumber;
+    private List<TaxDetailInfo> taxDetailsList = new ArrayList<>();
+    private String fraudLevel;
+    private String displayRecycleAttempted;
+    private String displaySaveInd;
+    private SpocsType spocs;
+    private boolean totalDueToday Flag;
+    private double totalDueToday;
+    private double runningTotalDueToday;
+    private double subTotalDueToday; // totalDueToday without taxes
+    private double subTotalDueWithoutUpgradeFee;
+    private double totalUpgradeFee;
+    private double totalETAEligibleAmount;
+    private String shellAccountNumber;
+    private double totalNonETACharges;
+    private double totalDueMonthly;
+    private double subTotalDueMonthly;
+    private double subTotalDueMonthlyForSALBYDDEUP; // totalDueMonthly for current order ddEup
+    private double subTotalMonthlyTaxes;
+    private double totalMonthlyTaxes;
+    private double subTotalOtherLines;
+    private double subTotalOtherLinesTaxes;
+    private double estimatedMonthlyTotalInOtherLines;
+    private List<Charge> chargeSummary;
+    @JsonProperty(value = "instantRebateId")
+    private boolean instantRebateId;
+    private String tradeInTotal;
+    private String deviceSizeList;
+}
+
+// Charge.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import lombok.Data;
+
+@Data
+public class Charge {
+    protected String chargeType;
+    protected double amount;
+    protected double finalPrice;
+    protected DiscountsAndOffers discountsAndOffers;
+}
+
+// DiscountsAndOffers.java  
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import lombok.Data;
+
+@Data
+public class DiscountsAndOffers {
+    String totalDiscount;
+    List<PricingDiscounts> discounts;
+}
+
+// PricingDiscounts.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import lombok.Data;
+
+@Data
+public class PricingDiscounts {
+    protected String discountType;
+    protected String description;
+    protected double amount;
+    protected double discountPercentage;
+    protected String discountActionCd;
+    protected String discountDescription;
+    protected String noOfDays;
+    protected String endDate;
+}
+
+// CartOrderHeaderConverter.java
+package vzw.pos.wsclient.cxp.domain.cartconverter;
+
+import org.springframework.stereotype.Component;
+
+@Component
+public class CartOrderHeaderConverter {
+    public void convertCartOrderHeader(Cart nsaCart, vzw.pos.wsclient.posservicesws.generated.common.Cart b360Cart) {
+        CartOrderHeader nsaCartOrderHeader = nsaCart.getOrderDetails();
+        vzw.pos.wsclient.posservicesws.generated.common.CartOrderHeader b360CartOrderHeader = new vzw.pos.wsclient.posservicesws.generated.common.CartOrderHeader();
+        
+        if (nsaCartOrderHeader != null) {
+            // Map customer and account information
+            if (nsaCartOrderHeader.getCustomerType() != null) {
+                b360CartOrderHeader.setCustomerType(nsaCartOrderHeader.getCustomerType().value());
+            }
+            b360CartOrderHeader.setUserType(nsaCartOrderHeader.getUserType());
+            b360CartOrderHeader.setAccountType(nsaCartOrderHeader.getAccountType());
+            b360CartOrderHeader.setLocationCode(nsaCartOrderHeader.getLocationCode());
+            b360CartOrderHeader.setRegionId(nsaCartOrderHeader.getRegionId());
+            b360CartOrderHeader.setBillingSystem(nsaCartOrderHeader.getBillingSystem());
+            b360CartOrderHeader.setPaperlessInd(nsaCartOrderHeader.getPaperlessInd());
+            
+            // Map credit and financial information
+            b360CartOrderHeader.setCreditApprovalStatus(nsaCartOrderHeader.getCreditApprovalStatus());
+            b360CartOrderHeader.setCreditStatusReason(nsaCartOrderHeader.getCreditStatusReason());
+            b360CartOrderHeader.setCreditAdvisory(nsaCartOrderHeader.getCreditAdvisory());
+            b360CartOrderHeader.setCreditClass(nsaCartOrderHeader.getCreditClass());
+            b360CartOrderHeader.setSecurityDepositAmount(nsaCartOrderHeader.getSecurityDepositAmount());
+            b360CartOrderHeader.setFwaSecurityDepositAmount(nsaCartOrderHeader.getFwaSecurityDepositAmount());
+            
+            // Map tax information
+            b360CartOrderHeader.setTaxSystem(nsaCartOrderHeader.getTaxSystem());
+            b360CartOrderHeader.setTotalTaxAmountByZipCodeList(nsaCartOrderHeader.getTotalTaxAmountByZipCodeList());
+            b360CartOrderHeader.setTotalTaxAmount(nsaCartOrderHeader.getTotalTaxAmount());
+            b360CartOrderHeader.setTaxDetailsList(nsaCartOrderHeader.getTaxDetailsList());
+            
+            // Map order details
+            b360CartOrderHeader.setPurchaseOrderNumber(nsaCartOrderHeader.getPurchaseOrderNumber());
+            b360CartOrderHeader.setFraudLevel(nsaCartOrderHeader.getFraudLevel());
+            b360CartOrderHeader.setDisplayRecycleAttempted(nsaCartOrderHeader.getDisplayRecycleAttempted());
+            b360CartOrderHeader.setDisplaySaveInd(nsaCartOrderHeader.getDisplaySaveInd());
+            b360CartOrderHeader.setSpocs(nsaCartOrderHeader.getSpocs());
+            
+            // Map financial amounts
+            b360CartOrderHeader.setTotalDueTodayFlag(nsaCartOrderHeader.isTotalDueTodayFlag());
+            b360CartOrderHeader.setTotalDueToday(nsaCartOrderHeader.getTotalDueToday());
+            b360CartOrderHeader.setRunningTotalDueToday(nsaCartOrderHeader.getRunningTotalDueToday());
+            b360CartOrderHeader.setSubTotalDueToday(nsaCartOrderHeader.getSubTotalDueToday());
+            b360CartOrderHeader.setSubTotalDueWithoutUpgradeFee(nsaCartOrderHeader.getSubTotalDueWithoutUpgradeFee());
+            b360CartOrderHeader.setTotalUpgradeFee(nsaCartOrderHeader.getTotalUpgradeFee());
+            b360CartOrderHeader.setTotalETAEligibleAmount(nsaCartOrderHeader.getTotalETAEligibleAmount());
+            b360CartOrderHeader.setShellAccountNumber(nsaCartOrderHeader.getShellAccountNumber());
+            b360CartOrderHeader.setTotalNonETACharges(nsaCartOrderHeader.getTotalNonETACharges());
+            
+            // Map monthly amounts
+            b360CartOrderHeader.setTotalDueMonthly(nsaCartOrderHeader.getTotalDueMonthly());
+            b360CartOrderHeader.setSubTotalDueMonthly(nsaCartOrderHeader.getSubTotalDueMonthly());
+            b360CartOrderHeader.setSubTotalDueMonthlyForSALBYDDEUP(nsaCartOrderHeader.getSubTotalDueMonthlyForSALBYDDEUP());
+            b360CartOrderHeader.setSubTotalMonthlyTaxes(nsaCartOrderHeader.getSubTotalMonthlyTaxes());
+            b360CartOrderHeader.setTotalMonthlyTaxes(nsaCartOrderHeader.getTotalMonthlyTaxes());
+            b360CartOrderHeader.setSubTotalOtherLines(nsaCartOrderHeader.getSubTotalOtherLines());
+            b360CartOrderHeader.setSubTotalOtherLinesTaxes(nsaCartOrderHeader.getSubTotalOtherLinesTaxes());
+            b360CartOrderHeader.setEstimatedMonthlyTotalInOtherLines(nsaCartOrderHeader.getEstimatedMonthlyTotalInOtherLines());
+            
+            // Map charge summary and other details
+            b360CartOrderHeader.setChargeSummary(nsaCartOrderHeader.getChargeSummary());
+            b360CartOrderHeader.setInstantRebateId(nsaCartOrderHeader.isInstantRebateId());
+            b360CartOrderHeader.setTradeInTotal(nsaCartOrderHeader.getTradeInTotal());
+            b360CartOrderHeader.setDeviceSizeList(nsaCartOrderHeader.getDeviceSizeList());
+        }
+        
+        // Set the converted header to the b360Cart
+        b360Cart.setOrderDetails(b360CartOrderHeader);
+    }
+}
+
+// CartCustomerType.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import java.io.Serializable;
+
+public enum CartCustomerType implements Serializable {
+    /**
+     * N- New Customer
+     */
+    N,
+    
+    /**
+     * U - upgrade customer
+     */
+    U,
+    
+    /**
+     * E - customer adding lines to existing account  
+     */
+    E,
+    
+    /**
+     * P - Previous customer rejoining verizon wireless
+     */
+    P,
+    
+    /**
+     * C - Combo - multiple customer types in a cart.
+     */
+    C;
+    
+    private final static long serialVersionUID = 1L;
+    
+    public String value() {
+        return name();
+    }
+    
+    public static CartCustomerType fromValue(String v) {
+        return valueOf(v);
+    }
+}
+
+// SpocsType.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import java.io.Serializable;
+
+public class SpocsType implements Serializable {
+    /**
+     */
+    private static final long serialVersionUID = 1L;
+    private List<Spoc> spoc;
+    private List<Spoc> alternateSpoc;
+    private NotificationOptions notificationOptions;
+    private String orderAuthMethodCode;
+    
+    /**
+     * @return the spoc
+     */
+    public List<Spoc> getSpoc() {
+        return spoc;
+    }
+    
+    /**
+     * @param spoc the spoc to set
+     */
+    public void setSpoc(List<Spoc> spoc) {
+        this.spoc = spoc;
+    }
+    
+    /**
+     * @return the notificationOptions
+     */
+    public NotificationOptions getNotificationOptions() {
+        return notificationOptions;
+    }
+    
+    /**
+     * @param notificationOptions the notificationOptions to set
+     */
+    public void setNotificationOptions(NotificationOptions notificationOptions) {
+        this.notificationOptions = notificationOptions;
+    }
+    
+    /**
+     * @return the orderAuthMethodCode
+     */
+    public String getOrderAuthMethodCode() {
+        return orderAuthMethodCode;
+    }
+    
+    /**
+     * @param orderAuthMethodCode the orderAuthMethodCode to set
+     */
+    public void setOrderAuthMethodCode(String orderAuthMethodCode) {
+        this.orderAuthMethodCode = orderAuthMethodCode;
+    }
+}
+
+// Spoc.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import java.io.Serializable;
+
+public class Spoc implements Serializable {
+    /**
+     */
+    private static final long serialVersionUID = 1L;
+    private String name;
+    private String email;
+    private String pocContactId;
+    private boolean defaultSpoc;
+    
+    /**
+     * @return the name
+     */
+    public String getName() {
+        return name;
+    }
+    
+    /**
+     * @param name the name to set
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    /**
+     * @return the email
+     */
+    public String getEmail() {
+        return email;
+    }
+    
+    /**
+     * @param email the email to set
+     */
+    public void setEmail(String email) {
+        this.email = email;
+    }
+    
+    /**
+     * @return the pocContactId
+     */
+    public String getPocContactId() {
+        return pocContactId;
+    }
+    
+    /**
+     * @param pocContactId the pocContactId to set
+     */
+    public void setPocContactId(String pocContactId) {
+        this.pocContactId = pocContactId;
+    }
+    
+    /**
+     * @return the defaultSpoc
+     */
+    public boolean isDefaultSpoc() {
+        return defaultSpoc;
+    }
+    
+    /**
+     * @param defaultSpoc the defaultSpoc to set
+     */
+    public void setDefaultSpoc(boolean defaultSpoc) {
+        this.defaultSpoc = defaultSpoc;
+    }
+}
+
+// NotificationOptions.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import java.io.Serializable;
+
+public class NotificationOptions implements Serializable {
+    /**
+     */
+    private static final long serialVersionUID = 1L;
+    private String salesRepEmail;
+    private String orderReceivedEmailId;
+    private String sentEmailResponseTo;
+    private String shippingConfirmationEmail;
+    private String userNotificationForOrderAcceptance;
+    private String userNotificationForOrderRejection;
+    private String emailContentType;
+    private String sendEmailFrom;
+    private String contactPhoneNumber;
+    
+    public String getContactPhoneNumber() {
+        return contactPhoneNumber;
+    }
+    
+    public void setContactPhoneNumber(String contactPhoneNumber) {
+        this.contactPhoneNumber = contactPhoneNumber;
+    }
+    
+    /**
+     * @return the salesRepEmail
+     */
+    public String getSalesRepEmail() {
+        return salesRepEmail;
+    }
+    
+    /**
+     * @param salesRepEmail the salesRepEmail to set
+     */
+    public void setSalesRepEmail(String salesRepEmail) {
+        this.salesRepEmail = salesRepEmail;
+    }
+}
+
+// MtnInfo.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import lombok.Data;
+
+@Data
+public class MtnInfo implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private String mtn;
+    private boolean isActionRequired = true;
+}
+
+// SubAccountInfo.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import lombok.Data;
+
+@Data
+public class SubAccountInfo implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private String subAccountId;
+    private String subAccountType;
+    private List<MtnInfo> mtnInfo;
+    private double totalDueMonthly;
+    private double subTotalDueMonthly;
+    private double estimatedNextMonthCharge;
+    private double totalDueToday;
+    private double totalTax;
+    private double subTotalDueToday;
+    private List<Charge> chargeSummary;
+}
