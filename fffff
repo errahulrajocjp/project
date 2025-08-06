@@ -67,7 +67,7 @@ public class CartOrderHeader implements Serializable {
     private List<Charge> chargeSummary;
     @JsonProperty(value = "instantRRCCredit")
     private boolean instantRRCCredit;
-    private String tradeInHome;
+    private String tradeAtHome;
 }
 
 // Charge.java
@@ -135,6 +135,10 @@ public class CartOrderHeaderConverter {
             b360CartOrderHeader.setAccountType(nsaCartOrderHeader.getAccountType());
             b360CartOrderHeader.setLocationCode(nsaCartOrderHeader.getLocationCode());
             b360CartOrderHeader.setRegionId(nsaCartOrderHeader.getRegionId());
+            b360CartOrderHeader.setLocationState(nsaCartOrderHeader.getLocationState());
+            b360CartOrderHeader.setHomeLocation(nsaCartOrderHeader.getHomeLocation());
+            b360CartOrderHeader.setOrderType(nsaCartOrderHeader.getOrderType());
+            b360CartOrderHeader.setCartType(nsaCartOrderHeader.getCartType());
             b360CartOrderHeader.setBillingSystem(nsaCartOrderHeader.getBillingSystem());
             b360CartOrderHeader.setPaperlessInd(nsaCartOrderHeader.getPaperlessInd());
             
@@ -146,9 +150,15 @@ public class CartOrderHeaderConverter {
             b360CartOrderHeader.setSecurityDepositAmount(nsaCartOrderHeader.getSecurityDepositAmount());
             b360CartOrderHeader.setFwaSecurityDepositAmount(nsaCartOrderHeader.getFwaSecurityDepositAmount());
             
+            // Map tax information
+            b360CartOrderHeader.setTaxSystem(nsaCartOrderHeader.getTaxSystem());
+            b360CartOrderHeader.setTotalTaxAmount(nsaCartOrderHeader.getTotalTaxAmount());
+            
             // Map order details
             b360CartOrderHeader.setPurchaseOrderNumber(nsaCartOrderHeader.getPurchaseOrderNumber());
             b360CartOrderHeader.setFraudLevel(nsaCartOrderHeader.getFraudLevel());
+            b360CartOrderHeader.setDeviceRecycleAttempted(nsaCartOrderHeader.getDeviceRecycleAttempted());
+            b360CartOrderHeader.setExplicitSaveInd(nsaCartOrderHeader.getExplicitSaveInd());
             b360CartOrderHeader.setSpocs(nsaCartOrderHeader.getSpocs());
             
             // Map financial amounts
@@ -156,19 +166,26 @@ public class CartOrderHeaderConverter {
             b360CartOrderHeader.setTotalDueToday(nsaCartOrderHeader.getTotalDueToday());
             b360CartOrderHeader.setRunningTotalDueToday(nsaCartOrderHeader.getRunningTotalDueToday());
             b360CartOrderHeader.setSubTotalDueToday(nsaCartOrderHeader.getSubTotalDueToday());
+            b360CartOrderHeader.setSubTotalDueTodayWithoutUpgradeFee(nsaCartOrderHeader.getSubTotalDueTodayWithoutUpgradeFee());
             b360CartOrderHeader.setTotalUpgradeFee(nsaCartOrderHeader.getTotalUpgradeFee());
+            b360CartOrderHeader.setTotalETAEligibleAmount(nsaCartOrderHeader.getTotalETAEligibleAmount());
             b360CartOrderHeader.setShellAccountNumber(nsaCartOrderHeader.getShellAccountNumber());
+            b360CartOrderHeader.setTotalNonETACharges(nsaCartOrderHeader.getTotalNonETACharges());
             
             // Map monthly amounts
             b360CartOrderHeader.setTotalDueMonthly(nsaCartOrderHeader.getTotalDueMonthly());
             b360CartOrderHeader.setSubTotalDueMonthly(nsaCartOrderHeader.getSubTotalDueMonthly());
+            b360CartOrderHeader.setSubTotalDueMonthlyForAALBYODEUP(nsaCartOrderHeader.getSubTotalDueMonthlyForAALBYODEUP());
             b360CartOrderHeader.setSubTotalMonthlyTaxes(nsaCartOrderHeader.getSubTotalMonthlyTaxes());
             b360CartOrderHeader.setTotalMonthlyTaxes(nsaCartOrderHeader.getTotalMonthlyTaxes());
             b360CartOrderHeader.setSubTotalOtherLines(nsaCartOrderHeader.getSubTotalOtherLines());
             b360CartOrderHeader.setSubTotalOtherLinesTaxes(nsaCartOrderHeader.getSubTotalOtherLinesTaxes());
+            b360CartOrderHeader.setEstimatedNextMonthCharge(nsaCartOrderHeader.getEstimatedNextMonthCharge());
             
             // Map charge summary and other details
             b360CartOrderHeader.setChargeSummary(nsaCartOrderHeader.getChargeSummary());
+            b360CartOrderHeader.setInstantRRCCredit(nsaCartOrderHeader.isInstantRRCCredit());
+            b360CartOrderHeader.setTradeAtHome(nsaCartOrderHeader.getTradeAtHome());
         }
         
         // Set the converted header to the b360Cart
