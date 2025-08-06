@@ -68,6 +68,54 @@ public class CartOrderHeader implements Serializable {
     @JsonProperty(value = "instantRRCCredit")
     private boolean instantRRCCredit;
     private String tradeAtHome;
+    
+    // Additional properties from File 1
+    @Deprecated
+    @JsonProperty(value="managerApprovalRequired")
+    private boolean managerApprovalRequired;
+    @JsonProperty(value = "isAttachmentCompleted")
+    private boolean isAttachmentCompleted;
+    private double nextMonthBillTotal;
+    private List<String> barCodes;
+    private String salesRepId;
+    private String saleType;
+    private String creditApplicationNum;
+    private String creditCheckType;
+    private String state;
+    private String zipCode;
+    private int orderNumber;
+    private String outletId;
+    private String registerNumber;
+    private String orderChannelId;
+    private List<OrderDetails> orderList;
+    private String salesRepUserIn;
+    private String resumeCartChannelID;
+    @JsonProperty(value = "channelValidated")
+    private boolean channelValidated;
+    private ManagerApproval managerApproval;
+    @JsonProperty(value="isAssisted")
+    private boolean isAssisted;
+    @JsonProperty(value="enableSplitShipment")
+    private boolean enableSplitShipment;
+    @JsonProperty(value="splitShipmentIndicator")
+    private boolean splitShipmentIndicator;
+    @JsonProperty(value="barcodeValidationIndicator")
+    private boolean barcodeValidationIndicator;
+    @JsonProperty(value="cartReadyForCheckout")
+    private boolean cartReadyForCheckout;
+    @JsonProperty(value="isSingleModConnectedDevice")
+    private boolean isSingleModConnectedDevice;
+    @JsonProperty(value="fiveGUpSellAccountLevel")
+    private boolean fiveGUpSellAccountLevel;
+    private String earliestShippingDate;
+    private double totalDownPaymentAmt;
+    private double totalEdgeBuyOutAmount;
+    private boolean availableLotsForGrantee;
+    @JsonProperty(value="customerOnTrialPlan")
+    private boolean customerOnTrialPlan;
+    private String saveCartEmailId;
+    @JsonProperty(value="expressCheckout")
+    private boolean expressCheckout;
 }
 
 // Charge.java
@@ -186,6 +234,41 @@ public class CartOrderHeaderConverter {
             b360CartOrderHeader.setChargeSummary(nsaCartOrderHeader.getChargeSummary());
             b360CartOrderHeader.setInstantRRCCredit(nsaCartOrderHeader.isInstantRRCCredit());
             b360CartOrderHeader.setTradeAtHome(nsaCartOrderHeader.getTradeAtHome());
+            
+            // Map additional properties from File 1 (33 properties)
+            b360CartOrderHeader.setManagerApprovalRequired(nsaCartOrderHeader.isManagerApprovalRequired());
+            b360CartOrderHeader.setIsAttachmentCompleted(nsaCartOrderHeader.isIsAttachmentCompleted());
+            b360CartOrderHeader.setNextMonthBillTotal(nsaCartOrderHeader.getNextMonthBillTotal());
+            b360CartOrderHeader.setBarCodes(nsaCartOrderHeader.getBarCodes());
+            b360CartOrderHeader.setSalesRepId(nsaCartOrderHeader.getSalesRepId());
+            b360CartOrderHeader.setSaleType(nsaCartOrderHeader.getSaleType());
+            b360CartOrderHeader.setCreditApplicationNum(nsaCartOrderHeader.getCreditApplicationNum());
+            b360CartOrderHeader.setCreditCheckType(nsaCartOrderHeader.getCreditCheckType());
+            b360CartOrderHeader.setState(nsaCartOrderHeader.getState());
+            b360CartOrderHeader.setZipCode(nsaCartOrderHeader.getZipCode());
+            b360CartOrderHeader.setOrderNumber(nsaCartOrderHeader.getOrderNumber());
+            b360CartOrderHeader.setOutletId(nsaCartOrderHeader.getOutletId());
+            b360CartOrderHeader.setRegisterNumber(nsaCartOrderHeader.getRegisterNumber());
+            b360CartOrderHeader.setOrderChannelId(nsaCartOrderHeader.getOrderChannelId());
+            b360CartOrderHeader.setOrderList(nsaCartOrderHeader.getOrderList());
+            b360CartOrderHeader.setSalesRepUserIn(nsaCartOrderHeader.getSalesRepUserIn());
+            b360CartOrderHeader.setResumeCartChannelID(nsaCartOrderHeader.getResumeCartChannelID());
+            b360CartOrderHeader.setChannelValidated(nsaCartOrderHeader.isChannelValidated());
+            b360CartOrderHeader.setManagerApproval(nsaCartOrderHeader.getManagerApproval());
+            b360CartOrderHeader.setIsAssisted(nsaCartOrderHeader.isIsAssisted());
+            b360CartOrderHeader.setEnableSplitShipment(nsaCartOrderHeader.isEnableSplitShipment());
+            b360CartOrderHeader.setSplitShipmentIndicator(nsaCartOrderHeader.isSplitShipmentIndicator());
+            b360CartOrderHeader.setBarcodeValidationIndicator(nsaCartOrderHeader.isBarcodeValidationIndicator());
+            b360CartOrderHeader.setCartReadyForCheckout(nsaCartOrderHeader.isCartReadyForCheckout());
+            b360CartOrderHeader.setIsSingleModConnectedDevice(nsaCartOrderHeader.isIsSingleModConnectedDevice());
+            b360CartOrderHeader.setFiveGUpSellAccountLevel(nsaCartOrderHeader.isFiveGUpSellAccountLevel());
+            b360CartOrderHeader.setEarliestShippingDate(nsaCartOrderHeader.getEarliestShippingDate());
+            b360CartOrderHeader.setTotalDownPaymentAmt(nsaCartOrderHeader.getTotalDownPaymentAmt());
+            b360CartOrderHeader.setTotalEdgeBuyOutAmount(nsaCartOrderHeader.getTotalEdgeBuyOutAmount());
+            b360CartOrderHeader.setAvailableLotsForGrantee(nsaCartOrderHeader.isAvailableLotsForGrantee());
+            b360CartOrderHeader.setCustomerOnTrialPlan(nsaCartOrderHeader.isCustomerOnTrialPlan());
+            b360CartOrderHeader.setSaveCartEmailId(nsaCartOrderHeader.getSaveCartEmailId());
+            b360CartOrderHeader.setExpressCheckout(nsaCartOrderHeader.isExpressCheckout());
         }
         
         // Set the converted header to the b360Cart
@@ -403,6 +486,329 @@ public class NotificationOptions implements Serializable {
      */
     public void setSalesRepEmail(String salesRepEmail) {
         this.salesRepEmail = salesRepEmail;
+    }
+}
+
+// OrderDetails.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import java.io.Serializable;
+import java.util.List;
+
+@Data
+public class OrderDetails implements Serializable {
+
+    private int orderNumber;
+    private long preOrderNumber;
+    private boolean fwaInStock;
+    private int numOfLinesForOrderActivityType;
+    private CreditApplication creditApplication;
+    private PostLineActivity orderActivityType;
+    private long digitalOrderId;
+    private String orderType;
+    private String deviceId;
+    @JsonProperty(value="managerApprovalRequired")
+    private boolean managerApprovalRequired;
+    private List<DeviceIdTracking> deviceIdList;
+    //@SQLIgnore
+    private String soeOrderNumber;
+    //@SQLIgnore
+    private String versionNumber;
+    //@SQLIgnore
+    private String billingAccountNumber;
+    //@SQLIgnore
+    private String serviceRequestId;
+    //@SQLIgnore
+    private String clientId;
+    private int numOfApprovedLines;
+    //@SQLIgnore
+    private String orderCreationTimeStamp;
+    private String locationCode;
+    private String retriggerCreditAndOrder;
+    private String flowType;
+    private String masterOrderNumber;
+    private String mtn;
+    private String trialOrderNumber;
+
+    private String subscriptionOrderNumber;
+    private String orderFulfillmentType;
+
+    private String trackingNumber;
+}
+
+// CreditApplication.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import java.io.Serializable;
+import java.util.List;
+import java.util.ArrayList;
+
+@Data
+public class CreditApplication implements Serializable {
+
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+    private Integer creditApplicationNum;
+    private String creditApprovalStatus;
+    private String creditStatusReason;
+    private String creditAdvisory;
+    private String securityDepositAmount;
+    private String serviceClass;
+    private String lineCreditClass;
+    @JsonProperty(value="internationalEligibility")
+    private boolean internationalEligibility;
+    private String customerTenureCode;
+    protected List<CreditAppNum> creditAppNumList = new ArrayList<CreditAppNum>();
+    private String ssn;
+    private String connexusKey;
+    private String twoSecurityDepositAmount;
+    private String shellAccountNumber;
+    private boolean creditAppEdited;
+    @JsonProperty("isSubmitCreditReTriggered")
+    private boolean isSubmitCreditReTriggered;
+    
+    public List<CreditAppNum> getCreditAppNumList() {
+        return creditAppNumList;
+    }
+
+    /**
+     * @param creditAppNumList the creditAppNumList to set
+     */
+    public void setCreditAppNumList(List<CreditAppNum> creditAppNumList) {
+        this.creditAppNumList = creditAppNumList;
+    }
+}
+
+// PostLineActivity.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import java.io.Serializable;
+
+public enum PostLineActivity implements Serializable {
+
+    /**
+     * REfund Only
+     */
+    REF,
+
+    /**
+     *TSPU REfund Only
+     */
+    IREF,
+
+    /**
+     * REfund and EXchange
+     */
+    REFEX,
+
+    /**
+     * REfund and EXchange NSA
+     */
+    REX,
+
+    /**
+     * EXChange only
+     */
+    EXC,
+
+    /**
+     * Price Protection
+     */
+    PP,
+
+    /**
+     * Price ADjustment
+     */
+    PAD,
+
+    /**
+     * DISconnect
+     */
+    DISC,
+
+    /**
+     * DISconnect NSA
+     */
+    DIS,
+
+    /**
+     * Contract Change
+     */
+    CC,
+
+    /**
+     * Contract CHange NSA
+     */
+    CCH,
+
+    /**
+     * Add A Line to an existing customer
+     */
+    AAL,
+
+    /**
+     * Equipment UPgrade
+     */
+    EUP,
+
+    /**
+     * NEW Customer
+     */
+    NEW,
+
+    /**
+     * ACcessory Purchase
+     */
+    ACC,
+
+    /**
+     * Device Only Purchase
+     */
+    DEO,
+
+    /**
+     * Certified Like New Replacement Device Repair
+     */
+    CLNRDR,
+
+    /**
+     * For MOvers customer on location change
+     */
+    MOVERS,
+
+    /**
+     * Standalone MCS Subscription
+     */
+    EUP_MCS,
+
+    /**
+     * Accessory only for Exchange order
+     */
+    EXCACC,
+
+    private final static long serialVersionUID = 1L;
+
+    public String value() {
+        return name();
+    }
+
+    public static PostLineActivity fromValue(String v) {
+        return valueOf(v);
+    }
+}
+
+// CreditAppNum.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.ArrayList;
+
+public class CreditAppNum implements Serializable {
+
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+    protected String creditAppNo;
+    protected List<String> mtnList = new ArrayList<String>();
+    
+    public String getCreditAppNo() {
+        return creditAppNo;
+    }
+    
+    public void setCreditAppNo(String creditAppNo) {
+        this.creditAppNo = creditAppNo;
+    }
+    
+    public List<String> getMtnList() {
+        return mtnList;
+    }
+
+    /**
+     * @param mtnList the mtnList to set
+     */
+    public void setMtnList(List<String> mtnList) {
+        this.mtnList = mtnList;
+    }
+}
+
+// DeviceIdTracking.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import java.io.Serializable;
+
+@Data
+public class DeviceIdTracking implements Serializable {
+
+    private static final DeviceIdTracking EMPTY = new DeviceIdTracking();
+    private String deviceId;
+    private String trackingNumber;
+
+    @JsonIgnore
+    public boolean isEmpty() {
+        return this.equals(EMPTY);
+    }
+}
+
+// ManagerApproval.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import java.io.Serializable;
+import java.util.List;
+
+@Data
+public class ManagerApproval implements Serializable {
+
+    private static final ManagerApproval EMPTY = new ManagerApproval();
+
+    private String userId;
+    private String name;
+    private String approvalMethod;
+    private String approvalRemarks;
+    private String remarks;
+    private String timeStamp;
+    private boolean managerApprovalReasonCode;
+    private List<ManagerApprovalRemarks> remarkLines;
+
+    @JsonIgnore
+    public boolean isEmpty() {
+        return this.equals(EMPTY);
+    }
+}
+
+// ManagerApprovalRemarks.java
+package vzw.pos.wsclient.cxp.domain.model.shopping.cart;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import java.io.Serializable;
+
+@Data
+public class ManagerApprovalRemarks implements Serializable {
+
+    private static final ManagerApprovalRemarks EMPTY = new ManagerApprovalRemarks();
+
+    private String userId;
+    private String name;
+    private String approvalMethod;
+    private String remarkLine;
+    private String timeStamp;
+    private boolean managerApprovalReasonCode;
+
+    @JsonIgnore
+    public boolean isEmpty() {
+        return this.equals(EMPTY);
     }
 }
 
