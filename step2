@@ -1,0 +1,62 @@
+<!-- Add this to your pom.xml within the <project> tag -->
+
+<repositories>
+    <repository>
+        <id>spring-releases</id>
+        <name>Spring Releases</name>
+        <url>https://oneartfactoryci.verizon.com/artifactory/B6VV_CXP-virtual</url>
+        <releases>
+            <enabled>true</enabled>
+        </releases>
+        <snapshots>
+            <enabled>false</enabled>
+        </snapshots>
+    </repository>
+    
+    <repository>
+        <id>verizon-artifactory</id>
+        <name>Verizon Artifactory</name>
+        <url>https://oneartfactoryci.verizon.com/artifactory/B6VV_CXP-virtual</url>
+        <releases>
+            <enabled>true</enabled>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+
+<pluginRepositories>
+    <pluginRepository>
+        <id>verizon-plugins</id>
+        <name>Verizon Plugin Repository</name>
+        <url>https://oneartfactoryci.verizon.com/artifactory/B6VV_CXP-virtual</url>
+        <releases>
+            <enabled>true</enabled>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </pluginRepository>
+</pluginRepositories>
+
+<!-- Fix the specific dependency issue -->
+<dependencies>
+    <!-- Other dependencies... -->
+    
+    <!-- Fix for the missing test artifact -->
+    <dependency>
+        <groupId>onexz.core</groupId>
+        <artifactId>onexz-msf-rsa</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+    </dependency>
+    
+    <!-- Regular dependency -->
+    <dependency>
+        <groupId>onexz.core</groupId>
+        <artifactId>onexz-msf-rsa</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+</dependencies>
