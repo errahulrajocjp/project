@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 
+          http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+    <servers>
+        <!-- Main Verizon Artifactory Server -->
+        <server>
+            <id>verizon-artifactory</id>
+            <username>YOUR_VERIZON_USERNAME</username>
+            <password>YOUR_API_KEY_OR_PASSWORD</password>
+        </server>
+        
+        <!-- Spring Releases Repository (maps to same Verizon Artifactory) -->
+        <server>
+            <id>spring-releases</id>
+            <username>YOUR_VERIZON_USERNAME</username>
+            <password>YOUR_API_KEY_OR_PASSWORD</password>
+        </server>
+        
+        <!-- Central Repository (fallback) -->
+        <server>
+            <id>central</id>
+            <username>YOUR_VERIZON_USERNAME</username>
+            <password>YOUR_API_KEY_OR_PASSWORD</password>
+        </server>
+    </servers>
+
+    <!-- Mirror Configuration to Route All Requests Through Verizon Artifactory -->
+    <mirrors>
+        <mirror>
+            <id>verizon-mirror</id>
+            <name>Verizon Artifactory Mirror</name>
+            <url>https://oneartfactoryci.verizon.com/artifactory/B6VV_CXP-virtual</url>
+            <mirrorOf>*</mirrorOf>
+        </mirror>
+    </mirrors>
+
+    <profiles>
+        <profile>
+            <id>verizon-artifactory</id>
+            <repositories>
+                <repository>
+                    <id>verizon-artifactory</id>
+                    <name>Verizon Artifactory</name>
+                    <url>https://oneartfactoryci.verizon.com/artifactory/B6VV_CXP-virtual</url>
+                    <releases>
+                        <enabled>true</enabled>
+                        <updatePolicy>daily</updatePolicy>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                        <updatePolicy>always</updatePolicy>
+                    </snapshots>
+                </repository>
+                
+                <repository>
+                    <id>spring-releases</id>
+                    <name>Spring Releases</name>
+                    <url>https://oneartfactoryci.verizon.com/artifactory/B6VV_CXP-virtual</url>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+            
+            <pluginRepositories>
+                <pluginRepository>
+                    <id>verizon-plugins</id>
+                    <name>Verizon Plugin Repository</name>
+                    <url>https://oneartfactoryci.verizon.com/artifactory/B6VV_CXP-virtual</url>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </pluginRepository>
+            </pluginRepositories>
+        </profile>
+    </profiles>
+
+    <activeProfiles>
+        <activeProfile>verizon-artifactory</activeProfile>
+    </activeProfiles>
+
+</settings>
