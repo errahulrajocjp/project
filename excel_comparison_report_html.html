@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>B360 to NSA JSON Property Mapping Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .download-btn { 
+            background: #4CAF50; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .download-btn:hover { background: #45a049; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .exact { background-color: #d4edda; }
+        .similar { background-color: #fff3cd; }
+        .missing { background-color: #f8d7da; }
+        .summary { background-color: #e3f2fd; margin: 20px 0; padding: 15px; border-radius: 5px; }
+        #csvData { display: none; }
+    </style>
+</head>
+<body>
+    <h1>B360 to NSA JSON Property Mapping Report</h1>
+    
+    <div class="summary">
+        <h3>📊 Summary Statistics</h3>
+        <p><strong>Total Properties Analyzed:</strong> 42</p>
+        <p><strong>Exact Matches:</strong> 8 (19%)</p>
+        <p><strong>Similar/Mappable:</strong> 10 (24%)</p>
+        <p><strong>Missing:</strong> 24 (57%)</p>
+    </div>
+
+    <button class="download-btn" onclick="downloadCSV()">📥 Download Excel CSV File</button>
+    <button class="download-btn" onclick="copyToClipboard()">📋 Copy Data for Excel</button>
+
+    <table id="comparisonTable">
+        <thead>
+            <tr>
+                <th>B360 Property Path</th>
+                <th>NSA Property Path</th>
+                <th>Match Type</th>
+                <th>Data Type B360</th>
+                <th>Data Type NSA</th>
+                <th>B360 Sample Value</th>
+                <th>NSA Sample Value</th>
+                <th>Implementation Notes</th>
+                <th>Priority</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="exact">
+                <td>customerType</td>
+                <td>customerType</td>
+                <td>Exact Match</td>
+                <td>String</td>
+                <td>String</td>
+                <td>"N"</td>
+                <td>"N"</td>
+                <td>Direct assignment possible</td>
+                <td>High</td>
+            </tr>
+            <tr class="exact">
+                <td>isAttachmentCompleted</td>
+                <td>isAttachmentCompleted</td>
+                <td>Exact Match</td>
+                <td>Boolean</td>
+                <td>Boolean</td>
+                <td>true</td>
+                <td>false</td>
+                <td>Direct assignment possible</td>
+                <td>High</td>
+            </tr>
+            <tr class="exact">
+                <td>locationCode</td>
+                <td>locationCode</td>
+                <td>Exact Match</td>
+                <td>String</td>
+                <td>String</td>
+                <td>"0026301"</td>
+                <td>"002301"</td>
+                <td>Direct assignment possible</td>
+                <td>High</td>
+            </tr>
+            <tr class="exact">
+                <td>managerApprovalRequired</td>
+                <td>managerApprovalRequired</td>
+                <td>Exact Match</td>
+                <td>Boolean</td>
+                <td>Boolean</td>
+                <td>false</td>
+                <td>false</td>
+                <td>Direct assignment possible</td>
+                <td>High</td>
+            </tr>
+            <tr class="exact">
+                <td>orderType</td>
+                <td>orderType</td>
+                <td>Exact Match</td>
+                <td>String</td>
+                <td>String</td>
+                <td>"PSL"</td>
+                <td>"PS"</td>
+                <td>Direct assignment possible</td>
+                <td>High</td>
+            </tr>
+            <tr class="exact">
+                <td>specs</td>
+                <td>specs</td>
+                <td>Exact Match</td>
+                <td>Array</td>
+                <td>Object</td>
+                <td>[]</td>
+                <td>{notificationOptions: {...}}</td>
+                <td>Structure conversion needed</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="exact">
+                <td>totalDueMonthly</td>
+                <td>totalDueMonthly</td>
+                <td>Exact Match</td>
+                <td>Number</td>
+                <td>Number</td>
+                <td>64.17</td>
+                <td>124.31</td>
+                <td>Direct assignment possible</td>
+                <td>High</td>
+            </tr>
+            <tr class="exact">
+                <td>totalDueToday</td>
+                <td>totalDueToday</td>
+                <td>Exact Match</td>
+                <td>Number</td>
+                <td>Number</td>
+                <td>0.0</td>
+                <td>225.15</td>
+                <td>Direct assignment possible</td>
+                <td>High</td>
+            </tr>
+            <tr class="similar">
+                <td>totalTaxAmount</td>
+                <td>totalTaxAmount</td>
+                <td>Similar</td>
+                <td>Number</td>
+                <td>String</td>
+                <td>69.32</td>
+                <td>"65.56"</td>
+                <td>String to Number conversion needed</td>
+                <td>High</td>
+            </tr>
+            <tr class="similar">
+                <td>effectiveDateList</td>
+                <td>effectiveDateDetails</td>
+                <td>Similar</td>
+                <td>Array</td>
+                <td>Object</td>
+                <td>[]</td>
+                <td>{selectedDate: "08/07/2025"}</td>
+                <td>Array to Object conversion</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="similar">
+                <td>eid</td>
+                <td>salesRepUswin</td>
+                <td>Similar</td>
+                <td>String</td>
+                <td>String</td>
+                <td>"stabmgr"</td>
+                <td>"tlamwr"</td>
+                <td>Different employee ID formats</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="similar">
+                <td>storeLocation</td>
+                <td>outletId</td>
+                <td>Similar</td>
+                <td>String</td>
+                <td>String</td>
+                <td>"0026301"</td>
+                <td>"0000000263"</td>
+                <td>Different location ID formats</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="similar">
+                <td>spoc[].email</td>
+                <td>profileInfo.email</td>
+                <td>Similar</td>
+                <td>String</td>
+                <td>String</td>
+                <td>"SYJQUC@VZM.COM"</td>
+                <td>"KHASINWALI.DUDEKULA@VERIZON.COM"</td>
+                <td>Array to Object mapping needed</td>
+                <td>High</td>
+            </tr>
+            <tr class="similar">
+                <td>spoc[].firstName</td>
+                <td>profileInfo.firstName</td>
+                <td>Similar</td>
+                <td>String</td>
+                <td>String</td>
+                <td>"TYRONE"</td>
+                <td>"KHASIM"</td>
+                <td>Array to Object mapping needed</td>
+                <td>High</td>
+            </tr>
+            <tr class="similar">
+                <td>spoc[].lastName</td>
+                <td>profileInfo.lastName</td>
+                <td>Similar</td>
+                <td>String</td>
+                <td>String</td>
+                <td>"BAKER"</td>
+                <td>"DUDE"</td>
+                <td>Array to Object mapping needed</td>
+                <td>High</td>
+            </tr>
+            <tr class="similar">
+                <td>spoc[].phoneNumber</td>
+                <td>profileInfo.cpn</td>
+                <td>Similar</td>
+                <td>String</td>
+                <td>String</td>
+                <td>"6201501344"</td>
+                <td>"9876543210"</td>
+                <td>Array to Object mapping needed</td>
+                <td>High</td>
+            </tr>
+            <tr class="similar">
+                <td>taxPrices[].taxDescription</td>
+                <td>taxDetailsList[].taxDescription</td>
+                <td>Similar</td>
+                <td>String</td>
+                <td>String</td>
+                <td>"GA State Sales Tax"</td>
+                <td>"NJ State Sales Tax"</td>
+                <td>Array structure mapping needed</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="similar">
+                <td>taxPrices[].totalTax</td>
+                <td>taxDetailsList[].taxAmount</td>
+                <td>Similar</td>
+                <td>Number</td>
+                <td>String</td>
+                <td>38.2</td>
+                <td>"65.56"</td>
+                <td>String to Number + Array mapping</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="missing">
+                <td>orderDetails.barCodes</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Array</td>
+                <td>-</td>
+                <td>[]</td>
+                <td>-</td>
+                <td>Set empty array as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>orderDetails.cartRemarks.holdRemark</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Array</td>
+                <td>-</td>
+                <td>[]</td>
+                <td>-</td>
+                <td>Set empty array as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>orderDetails.cartRemarks.itemRemark</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Array</td>
+                <td>-</td>
+                <td>[]</td>
+                <td>-</td>
+                <td>Set empty array as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>orderDetails.remark</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Array</td>
+                <td>-</td>
+                <td>[4 objects]</td>
+                <td>-</td>
+                <td>Create from order activity/audit trail</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="missing">
+                <td>cantReviewed</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Boolean</td>
+                <td>-</td>
+                <td>false</td>
+                <td>-</td>
+                <td>Set false as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>customerVisionType</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>String</td>
+                <td>-</td>
+                <td>"BF"</td>
+                <td>-</td>
+                <td>Business rule needed for default</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="missing">
+                <td>d2DB2BFlow</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Boolean</td>
+                <td>-</td>
+                <td>false</td>
+                <td>-</td>
+                <td>Set false as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>dppTaxPrices</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Array</td>
+                <td>-</td>
+                <td>[]</td>
+                <td>-</td>
+                <td>Set empty array as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>dppTotalTaxAmount</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Number</td>
+                <td>-</td>
+                <td>0.0</td>
+                <td>-</td>
+                <td>Set 0.0 as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>homeLocation</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>String</td>
+                <td>-</td>
+                <td>"0026301"</td>
+                <td>-</td>
+                <td>Use locationCode or fulfillmentLocation</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="missing">
+                <td>ioOrderDetails</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Array</td>
+                <td>-</td>
+                <td>[]</td>
+                <td>-</td>
+                <td>Set empty array as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>ispuAlternateDocList</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Array</td>
+                <td>-</td>
+                <td>[]</td>
+                <td>-</td>
+                <td>Set empty array as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>isTelesalesExternal</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>String</td>
+                <td>-</td>
+                <td>"No"</td>
+                <td>-</td>
+                <td>Set "No" as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>lockCantForReview</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Boolean</td>
+                <td>-</td>
+                <td>false</td>
+                <td>-</td>
+                <td>Set false as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>noOfLinesPromoApplied</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Number</td>
+                <td>-</td>
+                <td>0</td>
+                <td>-</td>
+                <td>Calculate from cartPromoInfo</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="missing">
+                <td>noOfLinesPromoMisMatched</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Number</td>
+                <td>-</td>
+                <td>0</td>
+                <td>-</td>
+                <td>Set 0 as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>offerRecoveryBaseAmount</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Number</td>
+                <td>-</td>
+                <td>400</td>
+                <td>-</td>
+                <td>Business rule needed</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>offerRecoveryEligible</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Boolean</td>
+                <td>-</td>
+                <td>true</td>
+                <td>-</td>
+                <td>Business rule needed</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>opportunityOrder</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>String</td>
+                <td>-</td>
+                <td>"New Opportunity"</td>
+                <td>-</td>
+                <td>Set default value</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>pocChangeDetail</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Array</td>
+                <td>-</td>
+                <td>[]</td>
+                <td>-</td>
+                <td>Set empty array as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>pocMaintDetail</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Array</td>
+                <td>-</td>
+                <td>[]</td>
+                <td>-</td>
+                <td>Set empty array as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>quoteDppTax</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Number</td>
+                <td>-</td>
+                <td>0.0</td>
+                <td>-</td>
+                <td>Set 0.0 as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>destinationSpoc</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Array</td>
+                <td>-</td>
+                <td>[]</td>
+                <td>-</td>
+                <td>Set empty array as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>notificationOptions.email1ContentType</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>String</td>
+                <td>-</td>
+                <td>"cust"</td>
+                <td>-</td>
+                <td>Set "cust" as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>notificationOptions.salesRepEmail</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>String</td>
+                <td>-</td>
+                <td>"SHASMS@CVZ2M.COM"</td>
+                <td>-</td>
+                <td>Business rule needed</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="missing">
+                <td>spoc[].defaultSpoc</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Boolean</td>
+                <td>-</td>
+                <td>false</td>
+                <td>-</td>
+                <td>Set false as default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>spoc[].name</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>String</td>
+                <td>-</td>
+                <td>"TYRONE BAKER"</td>
+                <td>-</td>
+                <td>Concatenate firstName + lastName</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>spoc[].pocContactId</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>String</td>
+                <td>-</td>
+                <td>"55483634"</td>
+                <td>-</td>
+                <td>Generate or set default</td>
+                <td>Low</td>
+            </tr>
+            <tr class="missing">
+                <td>totalAdminFeeAmount</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Number</td>
+                <td>-</td>
+                <td>40.0</td>
+                <td>-</td>
+                <td>Use totalActivationFees if applicable</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="missing">
+                <td>totalDueUpfront</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Number</td>
+                <td>-</td>
+                <td>69.32</td>
+                <td>-</td>
+                <td>Calculate from other totals</td>
+                <td>Medium</td>
+            </tr>
+            <tr class="missing">
+                <td>totalTax</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Number</td>
+                <td>-</td>
+                <td>69.32</td>
+                <td>-</td>
+                <td>Use totalTaxAmount</td>
+                <td>High</td>
+            </tr>
+            <tr class="missing">
+                <td>trustedCommunitySurcharge</td>
+                <td>Not Found</td>
+                <td>Missing</td>
+                <td>Number</td>
+                <td>-</td>
+                <td>0.0</td>
+                <td>-</td>
+                <td>Set 0.0 as default</td>
+                <td>Low</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div id="csvData">
+B360 Property Path,NSA Property Path,Match Type,Data Type B360,Data Type NSA,B360 Sample Value,NSA Sample Value,Implementation Notes,Priority
+customerType,customerType,Exact Match,String,String,N,N,Direct assignment possible,High
+isAttachmentCompleted,isAttachmentCompleted,Exact Match,Boolean,Boolean,true,false,Direct assignment possible,High
+locationCode,locationCode,Exact Match,String,String,0026301,002301,Direct assignment possible,High
+managerApprovalRequired,managerApprovalRequired,Exact Match,Boolean,Boolean,false,false,Direct assignment possible,High
+orderType,orderType,Exact Match,String,String,PSL,PS,Direct assignment possible,High
+specs,specs,Exact Match,Array,Object,[],{notificationOptions: {...}},Structure conversion needed,Medium
+totalDueMonthly,totalDueMonthly,Exact Match,Number,Number,64.17,124.31,Direct assignment possible,High
+totalDueToday,totalDueToday,Exact Match,Number,Number,0.0,225.15,Direct assignment possible,High
+totalTaxAmount,totalTaxAmount,Similar,Number,String,69.32,65.56,String to Number conversion needed,High
+effectiveDateList,effectiveDateDetails,Similar,Array,Object,[],{selectedDate: 08/07/2025},Array to Object conversion,Medium
+eid,salesRepUswin,Similar,String,String,stabmgr,tlamwr,Different employee ID formats,Medium
+storeLocation,outletId,Similar,String,String,0026301,0000000263,Different location ID formats,Medium
+spoc[].email,profileInfo.email,Similar,String,String,SYJQUC@VZM.COM,KHASINWALI.DUDEKULA@VERIZON.COM,Array to Object mapping needed,High
+spoc[].firstName,profileInfo.firstName,Similar,String,String,TYRONE,KHASIM,Array to Object mapping needed,High
+spoc[].lastName,profileInfo.lastName,Similar,String,String,BAKER,DUDE,Array to Object mapping needed,High
+spoc[].phoneNumber,profileInfo.cpn,Similar,String,String,6201501344,9876543210,Array to Object mapping needed,High
+taxPrices[].taxDescription,taxDetailsList[].taxDescription,Similar,String,String,GA State Sales Tax,NJ State Sales Tax,Array structure mapping needed,Medium
+taxPrices[].totalTax,taxDetailsList[].taxAmount,Similar,Number,String,38.2,65.56,String to Number + Array mapping,Medium
+orderDetails.barCodes,Not Found,Missing,Array,-,[],-, Set empty array as default,Low
+orderDetails.cartRemarks.holdRemark,Not Found,Missing,Array,-,[],-, Set empty array as default,Low
+orderDetails.cartRemarks.itemRemark,Not Found,Missing,Array,-,[],-, Set empty array as default,Low
+orderDetails.remark,Not Found,Missing,Array,-,[4 objects],-, Create from order activity/audit trail,Medium
+cantReviewed,Not Found,Missing,Boolean,-,false,-, Set false as default,Low
+customerVisionType,Not Found,Missing,String,-,BF,-, Business rule needed for default,Medium
+d2DB2BFlow,Not Found,Missing,Boolean,-,false,-, Set false as default,Low
+dppTaxPrices,Not Found,Missing,Array,-,[],-, Set empty array as default,Low
+dppTotalTaxAmount,Not Found,Missing,Number,-,0.0,-, Set 0.0 as default,Low
+homeLocation,Not Found,Missing,String,-,0026301,-, Use locationCode or fulfillmentLocation,Medium
+ioOrderDetails,Not Found,Missing,Array,-,[],-, Set empty array as default,Low
+ispuAlternateDocList,Not Found,Missing,Array,-,[],-, Set empty array as default,Low
+isTelesalesExternal,Not Found,Missing,String,-,No,-, Set No as default,Low
+lockCantForReview,Not Found,Missing,Boolean,-,false,-, Set false as default,Low
+noOfLinesPromoApplied,Not Found,Missing,Number,-,0,-, Calculate from cartPromoInfo,Medium
+noOfLinesPromoMisMatched,Not Found,Missing,Number,-,0,-, Set 0 as default,Low
+offerRecoveryBaseAmount,Not Found,Missing,Number,-,400,-, Business rule needed,Low
+offerRecoveryEligible,Not Found,Missing,Boolean,-,true,-, Business rule needed,Low
+opportunityOrder,Not Found,Missing,String,-,New Opportunity,-, Set default value,Low
+pocChangeDetail,Not Found,Missing,Array,-,[],-, Set empty array as default,Low
+pocMaintDetail,Not Found,Missing,Array,-,[],-, Set empty array as default,Low
+quoteDppTax,Not Found,Missing,Number,-,0.0,-, Set 0.0 as default,Low
+destinationSpoc,Not Found,Missing,Array,-,[],-, Set empty array as default,Low
+notificationOptions.email1ContentType,Not Found,Missing,String,-,cust,-, Set cust as default,Low
+notificationOptions.salesRepEmail,Not Found,Missing,String,-,SHASMS@CVZ2M.COM,-, Business rule needed,Medium
+spoc[].defaultSpoc,Not Found,Missing,Boolean,-,false,-, Set false as default,Low
+spoc[].name,Not Found,Missing,String,-,TYRONE BAKER,-, Concatenate firstName + lastName,Low
+spoc[].pocContactId,Not Found,Missing,String,-,55483634,-, Generate or set default,Low
+totalAdminFeeAmount,Not Found,Missing,Number,-,40.0,-, Use totalActivationFees if applicable,Medium
+totalDueUpfront,Not Found,Missing,Number,-,69.32,-, Calculate from other totals,Medium
+totalTax,Not Found,Missing,Number,-,69.32,-, Use totalTaxAmount,High
+trustedCommunitySurcharge,Not Found,Missing,Number,-,0.0,-, Set 0.0 as default,Low
+    </div>
+
+    <script>
+        function downloadCSV() {
+            const csvContent = document.getElementById('csvData').textContent.trim();
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'B360_NSA_Property_Mapping_Report.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function copyToClipboard() {
+            const csvContent = document.getElementById('csvData').textContent.trim();
+            navigator.clipboard.writeText(csvContent).then(function() {
+                alert('Data copied to clipboard! You can now paste it into Excel.');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = csvContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Data copied to clipboard! You can now paste it into Excel.');
+            });
+        }
+    </script>
+</body>
+</html>
