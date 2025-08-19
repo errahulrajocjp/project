@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B360 to NSA JSON Mapping Analysis Report</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.8;
+            font-size: 16px;
+        }
+        
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #495057, #6c757d);
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 13px;
+            vertical-align: top;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .match-exact { background-color: #d4edda; color: #155724; }
+        .match-potential { background-color: #fff3cd; color: #856404; }
+        .match-none { background-color: #f8d7da; color: #721c24; }
+        .match-additional { background-color: #d1ecf1; color: #0c5460; }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .data-type {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        
+        .summary-section {
+            margin-top: 30px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .summary-section h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>B360 to NSA JSON Mapping Analysis Report</h1>
+            <p>Deep Structural Analysis & Field Mapping Comparison</p>
+        </div>
+        
+        <div class="controls">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="exactMatches">0</div>
+                    <div class="stat-label">Exact Matches</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="potentialMatches">0</div>
+                    <div class="stat-label">Potential Matches</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="noMatches">0</div>
+                    <div class="stat-label">No Matches</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="additionalFields">0</div>
+                    <div class="stat-label">NSA Only Fields</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <button class="download-btn" onclick="downloadExcel()">
+                    📊 Download Excel Report
+                </button>
+                <button class="download-btn" onclick="copyAllData()" style="background: linear-gradient(135deg, #6f42c1, #e83e8c);">
+                    📋 Copy All Data
+                </button>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="table-container">
+                <table id="mappingTable">
+                    <thead>
+                        <tr>
+                            <th>B360 Field Name</th>
+                            <th>B360 Data Type</th>
+                            <th>B360 Sample Value</th>
+                            <th>NSA Field Name</th>
+                            <th>NSA Data Type</th>
+                            <th>NSA Sample Value</th>
+                            <th>Match Status</th>
+                            <th>Mapping Strategy</th>
+                            <th>Comments</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mappingTableBody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="summary-section">
+                <h3>Mapping Summary & Recommendations</h3>
+                <div id="summaryContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JSON data
+        const b360Data = {
+            "cartHeader": {
+                "additionalSalesRepInfo": [],
+                "cartId": "786aa8ce-1fd0-4846-a166-e43d73cad666",
+                "cpqCartId": "13461761",
+                "cpqCartVersionId": "8796510",
+                "creditApplicationNum": "250563344",
+                "ecpdInfo": {"ecpdID": "14441"},
+                "ecpdSegmentType": "MAJOR_ACCT_CORPORATE",
+                "emailAddress": "SLUUUC@VZM.COM",
+                "existingCustInlineQuote": false,
+                "isCartApprovalFlow": false,
+                "isCustomerClassVisionEIS": false,
+                "isDynamicBundleCart": false,
+                "isExistingShellAccount": false,
+                "isFlow360": false,
+                "isLegacyToInLine": false,
+                "isMultiAceCorder": false,
+                "isTYSPromoFlow": false,
+                "isWirelessPortIn": false,
+                "isWirelinePortIn": false,
+                "lastAccessSalesRep": "ENC",
+                "lastAccessSystem": "B2B-ORD",
+                "lockingSystem": "B2B-ORD",
+                "lockStatus": "U1",
+                "moreThan99Lines": false,
+                "originatingSalesRep": "ENC",
+                "originatingSystemId": "NETACE",
+                "personalShopperFlow": false,
+                "retailVersion": "F1.1.0_NEW~RETAIL_1.0",
+                "shellAccountNumber": "944436443-00002",
+                "sourceSystem": "B2B-ORD",
+                "status": "R",
+                "systemId": "NETACE",
+                "totalTransactionTime": "334464",
+                "trackingId": "8b043cd1-fa2f-4b82-00ec-5ff8414bb638",
+                "userId": "tabng",
+                "viewTogetherFlow": true
+            }
+        };
+
+        const nsaData = {
+            "cartHeader": {
+                "adobeId": "",
+                "cartCreator": "",
+                "cartCreatorChannelId": "OMNI_RETAIL",
+                "cartCreatorOrderLocationCode": "0026301",
+                "cartCreatorSalesRepId": "ENC01",
+                "cartId": "dd4e7a34-1749-43cb-b72d-70f8233bf974",
+                "cartSavedByCustomer": false,
+                "caseId": "SOP-23409872-E01",
+                "createTimestamp": "2025-08-07T01:18:29.34-04:00[US/Eastern]",
+                "creditApplicationNum": "24511981",
+                "customerIpAddress": "10.119.16.21",
+                "ecpdToken": "",
+                "isCoreRep": false,
+                "isERTRep": false,
+                "isVzHdaEligible": false,
+                "isVzPhEligible": false,
+                "isVzPhInAccount": false,
+                "isVzPhInCart": false,
+                "lastUpdateChannelId": "OMNI_RETAIL",
+                "lastUpdateChannelSource": "ASSISTED",
+                "lastUpdateTimestamp": "2025-08-07T01:23:19.44-04:00[US/Eastern]",
+                "locationType": "5",
+                "mavPackLocation": false,
+                "orderCreationTimestamp": "2025-08-07T01:22:18.592144416-04:00[US/Eastern]",
+                "preConfiguredCartType": "BAU",
+                "preConfiguredCartTypeDuringAddDevice": "BAU",
+                "redemptionCode": "",
+                "referralSaleRepId": "",
+                "referralVendorId": "",
+                "repRole": "POSITSUPERUSER",
+                "sessionId": "76453604-69ac-41fd-9c0f-ac0123b3f466",
+                "shellAccountSelected": false,
+                "sourceSystem": "OMNI_RETAIL",
+                "status": "A",
+                "vendorId": "NETACE",
+                "visionCustomerType": "PE",
+                "winBackAccountNumber": ""
+            }
+        };
+
+        function getDataType(value) {
+            if (Array.isArray(value)) return 'Array';
+            if (value === null) return 'null';
+            if (typeof value === 'object') return 'Object';
+            if (typeof value === 'string') return 'String';
+            if (typeof value === 'number') return 'Number';
+            if (typeof value === 'boolean') return 'Boolean';
+            return 'Unknown';
+        }
+
+        function getSampleValue(value) {
+            if (Array.isArray(value)) return `[${value.length} items]`;
+            if (typeof value === 'object' && value !== null) return JSON.stringify(value);
+            if (typeof value === 'string' && value.length > 50) return value.substring(0, 47) + '...';
+            return String(value);
+        }
+
+        function findPotentialMatches(b360Field, nsaFields) {
+            const potential = [];
+            const b360Lower = b360Field.toLowerCase();
+            
+            nsaFields.forEach(nsaField => {
+                const nsaLower = nsaField.toLowerCase();
+                
+                // Check for substring matches
+                if (b360Lower.includes(nsaLower) || nsaLower.includes(b360Lower)) {
+                    potential.push(nsaField);
+                }
+                
+                // Check for similar patterns
+                if (b360Lower.replace(/[^a-z]/g, '') === nsaLower.replace(/[^a-z]/g, '')) {
+                    potential.push(nsaField);
+                }
+                
+                // Check for camelCase variations
+                const b360Words = b360Field.split(/(?=[A-Z])/).map(w => w.toLowerCase());
+                const nsaWords = nsaField.split(/(?=[A-Z])/).map(w => w.toLowerCase());
+                
+                if (b360Words.some(word => nsaWords.includes(word)) && b360Words.length > 1) {
+                    potential.push(nsaField);
+                }
+            });
+            
+            return [...new Set(potential)];
+        }
+
+        function analyzeMappings() {
+            const b360Fields = b360Data.cartHeader;
+            const nsaFields = nsaData.cartHeader;
+            const nsaFieldNames = Object.keys(nsaFields);
+            
+            const mappings = [];
+            let exactMatches = 0;
+            let potentialMatches = 0;
+            let noMatches = 0;
+
+            // Analyze B360 fields
+            Object.keys(b360Fields).forEach(b360Field => {
+                const b360Value = b360Fields[b360Field];
+                const b360Type = getDataType(b360Value);
+                const b360Sample = getSampleValue(b360Value);
+                
+                let matchStatus, nsaField, nsaType, nsaSample, strategy, comments;
+                
+                if (nsaFields.hasOwnProperty(b360Field)) {
+                    // Exact match
+                    matchStatus = 'EXACT';
+                    nsaField = b360Field;
+                    nsaType = getDataType(nsaFields[b360Field]);
+                    nsaSample = getSampleValue(nsaFields[b360Field]);
+                    strategy = 'Direct Assignment';
+                    comments = b360Type === nsaType ? 'Perfect match - same name and type' : `Type mismatch: ${b360Type} vs ${nsaType}`;
+                    exactMatches++;
+                } else {
+                    // Look for potential matches
+                    const potentials = findPotentialMatches(b360Field, nsaFieldNames);
+                    
+                    if (potentials.length > 0) {
+                        matchStatus = 'POTENTIAL';
+                        nsaField = potentials.join(', ');
+                        nsaType = potentials.map(p => getDataType(nsaFields[p])).join(', ');
+                        nsaSample = potentials.map(p => getSampleValue(nsaFields[p])).join(' | ');
+                        strategy = 'Conditional Mapping';
+                        comments = `Potential matches found: ${potentials.length} candidate(s)`;
+                        potentialMatches++;
+                    } else {
+                        matchStatus = 'NONE';
+                        nsaField = 'N/A';
+                        nsaType = 'N/A';
+                        nsaSample = 'N/A';
+                        strategy = 'Default Value / Skip';
+                        comments = 'No matching field found in NSA';
+                        noMatches++;
+                    }
+                }
+                
+                mappings.push({
+                    b360Field, b360Type, b360Sample, nsaField, nsaType, nsaSample, matchStatus, strategy, comments
+                });
+            });
+
+            // Find NSA-only fields
+            const nsaOnlyFields = [];
+            nsaFieldNames.forEach(nsaField => {
+                if (!b360Fields.hasOwnProperty(nsaField)) {
+                    nsaOnlyFields.push({
+                        b360Field: 'N/A',
+                        b360Type: 'N/A',
+                        b360Sample: 'N/A',
+                        nsaField: nsaField,
+                        nsaType: getDataType(nsaFields[nsaField]),
+                        nsaSample: getSampleValue(nsaFields[nsaField]),
+                        matchStatus: 'NSA_ONLY',
+                        strategy: 'Available for Enhancement',
+                        comments: 'Additional field available in NSA'
+                    });
+                }
+            });
+
+            // Update statistics
+            document.getElementById('exactMatches').textContent = exactMatches;
+            document.getElementById('potentialMatches').textContent = potentialMatches;
+            document.getElementById('noMatches').textContent = noMatches;
+            document.getElementById('additionalFields').textContent = nsaOnlyFields.length;
+
+            return [...mappings, ...nsaOnlyFields];
+        }
+
+        function renderTable(mappings) {
+            const tbody = document.getElementById('mappingTableBody');
+            tbody.innerHTML = '';
+
+            mappings.forEach(mapping => {
+                const row = tbody.insertRow();
+                
+                const statusClass = {
+                    'EXACT': 'match-exact',
+                    'POTENTIAL': 'match-potential',
+                    'NONE': 'match-none',
+                    'NSA_ONLY': 'match-additional'
+                }[mapping.matchStatus];
+
+                row.innerHTML = `
+                    <td><strong>${mapping.b360Field}</strong></td>
+                    <td><span class="data-type">${mapping.b360Type}</span></td>
+                    <td>${mapping.b360Sample}</td>
+                    <td><strong>${mapping.nsaField}</strong></td>
+                    <td><span class="data-type">${mapping.nsaType}</span></td>
+                    <td>${mapping.nsaSample}</td>
+                    <td><span class="status-badge ${statusClass}">${mapping.matchStatus}</span></td>
+                    <td>${mapping.strategy}</td>
+                    <td>${mapping.comments}</td>
+                `;
+            });
+        }
+
+        function generateSummary(mappings) {
+            const exactCount = mappings.filter(m => m.matchStatus === 'EXACT').length;
+            const potentialCount = mappings.filter(m => m.matchStatus === 'POTENTIAL').length;
+            const noneCount = mappings.filter(m => m.matchStatus === 'NONE').length;
+            const nsaOnlyCount = mappings.filter(m => m.matchStatus === 'NSA_ONLY').length;
+
+            const summary = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4>Mapping Statistics</h4>
+                        <ul>
+                            <li><strong>${exactCount}</strong> fields have exact matches (${((exactCount/Object.keys(b360Data.cartHeader).length)*100).toFixed(1)}%)</li>
+                            <li><strong>${potentialCount}</strong> fields have potential matches requiring analysis</li>
+                            <li><strong>${noneCount}</strong> fields have no matches and need default values</li>
+                            <li><strong>${nsaOnlyCount}</strong> additional fields available in NSA for future enhancements</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>Implementation Recommendations</h4>
+                        <ul>
+                            <li><strong>Direct Mapping:</strong> ${exactCount} fields can be directly assigned</li>
+                            <li><strong>Custom Logic:</strong> ${potentialCount} fields need conditional mapping logic</li>
+                            <li><strong>Default Values:</strong> ${noneCount} fields require default value strategy</li>
+                            <li><strong>Data Validation:</strong> Type mismatches require validation logic</li>
+                        </ul>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 5px;">
+                    <strong>Key Findings:</strong>
+                    <ul>
+                        <li>Both systems use similar core identifiers (cartId, creditApplicationNum, status)</li>
+                        <li>B360 is more enterprise-focused while NSA is retail/omni-channel oriented</li>
+                        <li>Boolean flags pattern is consistent but with different business contexts</li>
+                        <li>System tracking fields have different naming conventions</li>
+                    </ul>
+                </div>
+            `;
+
+            document.getElementById('summaryContent').innerHTML = summary;
+        }
+
+        function copyAllData() {
+            const mappings = analyzeMappings();
+            
+            // Create formatted text data
+            let copyText = "B360 TO NSA JSON MAPPING ANALYSIS REPORT\n";
+            copyText += "=" * 50 + "\n\n";
+            
+            // Statistics
+            const exactCount = mappings.filter(m => m.matchStatus === 'EXACT').length;
+            const potentialCount = mappings.filter(m => m.matchStatus === 'POTENTIAL').length;
+            const noneCount = mappings.filter(m => m.matchStatus === 'NONE').length;
+            const nsaOnlyCount = mappings.filter(m => m.matchStatus === 'NSA_ONLY').length;
+            
+            copyText += "SUMMARY STATISTICS:\n";
+            copyText += `- Exact Matches: ${exactCount}\n`;
+            copyText += `- Potential Matches: ${potentialCount}\n`;
+            copyText += `- No Matches: ${noneCount}\n`;
+            copyText += `- NSA Only Fields: ${nsaOnlyCount}\n\n`;
+            
+            // Detailed mapping table
+            copyText += "DETAILED FIELD MAPPING:\n";
+            copyText += "-" * 120 + "\n";
+            copyText += "B360 FIELD\t\tB360 TYPE\tNSA FIELD\t\tNSA TYPE\tMATCH STATUS\tSTRATEGY\n";
+            copyText += "-" * 120 + "\n";
+            
+            mappings.forEach(mapping => {
+                copyText += `${mapping.b360Field.padEnd(20)}\t${mapping.b360Type.padEnd(10)}\t${mapping.nsaField.padEnd(20)}\t${mapping.nsaType.padEnd(10)}\t${mapping.matchStatus.padEnd(12)}\t${mapping.strategy}\n`;
+            });
+            
+            copyText += "\n" + "-" * 120 + "\n\n";
+            
+            // Categorized listings
+            copyText += "EXACT MATCHES (Direct Assignment):\n";
+            mappings.filter(m => m.matchStatus === 'EXACT').forEach(m => {
+                copyText += `- ${m.b360Field} → ${m.nsaField}\n`;
+            });
+            
+            copyText += "\nPOTENTIAL MATCHES (Conditional Mapping Required):\n";
+            mappings.filter(m => m.matchStatus === 'POTENTIAL').forEach(m => {
+                copyText += `- ${m.b360Field} → ${m.nsaField} (${m.comments})\n`;
+            });
+            
+            copyText += "\nNO MATCHES (Default Value Strategy):\n";
+            mappings.filter(m => m.matchStatus === 'NONE').forEach(m => {
+                copyText += `- ${m.b360Field} (${m.b360Type})\n`;
+            });
+            
+            copyText += "\nNSA ONLY FIELDS (Available for Enhancement):\n";
+            mappings.filter(m => m.matchStatus === 'NSA_ONLY').forEach(m => {
+                copyText += `- ${m.nsaField} (${m.nsaType})\n`;
+            });
+            
+            copyText += "\n" + "=" * 50 + "\n";
+            copyText += "Generated on: " + new Date().toLocaleString() + "\n";
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(copyText).then(() => {
+                // Show success message
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ Copied to Clipboard!';
+                btn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = 'linear-gradient(135deg, #6f42c1, #e83e8c)';
+                }, 2000);
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = copyText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Show success message
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ Copied to Clipboard!';
+                btn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = 'linear-gradient(135deg, #6f42c1, #e83e8c)';
+                }, 2000);
+            });
+        }
+
+        function downloadExcel() {
+            const mappings = analyzeMappings();
+            
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Main mapping sheet
+            const wsData = [
+                ['B360 Field Name', 'B360 Data Type', 'B360 Sample Value', 'NSA Field Name', 'NSA Data Type', 'NSA Sample Value', 'Match Status', 'Mapping Strategy', 'Comments']
+            ];
+            
+            mappings.forEach(mapping => {
+                wsData.push([
+                    mapping.b360Field,
+                    mapping.b360Type,
+                    mapping.b360Sample,
+                    mapping.nsaField,
+                    mapping.nsaType,
+                    mapping.nsaSample,
+                    mapping.matchStatus,
+                    mapping.strategy,
+                    mapping.comments
+                ]);
+            });
+            
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            
+            // Set column widths
+            ws['!cols'] = [
+                {wch: 25}, {wch: 15}, {wch: 30}, {wch: 25}, {wch: 15}, {wch: 30}, {wch: 15}, {wch: 20}, {wch: 40}
+            ];
+            
+            XLSX.utils.book_append_sheet(wb, ws, 'Field Mapping Analysis');
+            
+            // Summary sheet
+            const summaryData = [
+                ['Metric', 'Count', 'Percentage'],
+                ['Exact Matches', mappings.filter(m => m.matchStatus === 'EXACT').length, ''],
+                ['Potential Matches', mappings.filter(m => m.matchStatus === 'POTENTIAL').length, ''],
+                ['No Matches', mappings.filter(m => m.matchStatus === 'NONE').length, ''],
+                ['NSA Only Fields', mappings.filter(m => m.matchStatus === 'NSA_ONLY').length, ''],
+                ['Total B360 Fields', Object.keys(b360Data.cartHeader).length, ''],
+                ['Total NSA Fields', Object.keys(nsaData.cartHeader).length, '']
+            ];
+            
+            const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary Statistics');
+            
+            // Download
+            XLSX.writeFile(wb, 'B360_NSA_Mapping_Analysis_Report.xlsx');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const mappings = analyzeMappings();
+            renderTable(mappings);
+            generateSummary(mappings);
+        });
+    </script>
+</body>
+</html>
