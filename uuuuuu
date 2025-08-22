@@ -1,0 +1,99 @@
+# Transaction Type and Primary Issue/Error Dropdown Values
+
+This document contains all the dropdown values for different transaction types and their corresponding primary issue/error options.
+
+---
+
+## Transaction Type: B360 Account Inquiry
+
+**Primary Issue/Error Options:**
+1. Access / Permission Issue
+2. Account Overview
+3. B360 Search
+4. Billing Overview
+5. Blank Screen / Latency
+6. Business Solutions / IoT
+7. Click to Call
+8. Device Payment
+9. Display
+10. ECPD
+11. Line Details
+12. Orders / Purchase History
+13. Plan and Usage
+14. POC Maintenance
+15. Promo Central
+16. Service Transactions
+17. SMB Enrollment
+18. Suspend / Reconnect
+19. User Preferences
+20. Transfer Your Service
+
+---
+
+## Transaction Type: B360 Ordering
+
+**Primary Issue/Error Options:**
+1. 5G Business Internet
+2. Accessory
+3. Activation
+4. Attachments
+5. Blank Screen / Latency
+6. Business Solutions / IoT
+7. BYOD
+8. Cart Validation
+9. Confirmation Screen
+10. Credit / Application
+11. Device / Product Selection
+12. Digital Cart
+13. Edit Order
+14. Feature Change
+15. In Store Pick Up
+16. MTN Assignment
+17. Offer
+18. One Talk
+19. Payments
+20. Pending Order
+21. Plan / Feature Selection
+22. POC Portal
+23. Port In
+24. Shipping/PPU Address
+25. Business Assistant
+
+---
+
+## Transaction Type: B360 Quote
+
+**Primary Issue/Error Options:**
+1. Accessories
+2. Blank Screen / Latency
+3. Device / Product Selection
+4. Digital Cart
+5. Digital Prospect Quote
+6. Existing Customer Search
+7. Offer
+8. POC Portal
+9. Quote Dashboard
+10. Quote Review
+
+---
+
+## Transaction Type: B360 Trade-In
+
+**Primary Issue/Error Options:**
+1. Device Validation
+2. Offer
+3. POC Portal
+4. Standalone Trade
+5. Trade Confirmation
+
+---
+
+## Summary
+
+**Total Transaction Types:** 4
+- B360 Account Inquiry (20 primary issue options)
+- B360 Ordering (25 primary issue options)
+- B360 Quote (10 primary issue options)
+- B360 Trade-In (5 primary issue options)
+
+**Total Unique Primary Issue/Error Values:** 60 options across all transaction types
